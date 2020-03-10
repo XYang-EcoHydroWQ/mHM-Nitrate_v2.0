@@ -1,0 +1,2 @@
+/gpfs0/home/yangx/mHM-Nitrate/github4doi/mHM-Nitrate_v2.0/src/lib/.gnu48.debug/mo_corr.d : /gpfs0/home/yangx/mHM-Nitrate/github4doi/mHM-Nitrate_v2.0/src/lib/mo_corr.f90
+/gpfs0/home/yangx/mHM-Nitrate/github4doi/mHM-Nitrate_v2.0/src/lib/.gnu48.debug/mo_corr.o : /gpfs0/home/yangx/mHM-Nitrate/github4doi/mHM-Nitrate_v2.0/src/lib/.gnu48.debug/mo_corr.d /gpfs0/home/yangx/mHM-Nitrate/github4doi/mHM-Nitrate_v2.0/src/lib/.gnu48.debug/mo_kind.o /gpfs0/home/yangx/mHM-Nitrate/github4doi/mHM-Nitrate_v2.0/src/lib/.gnu48.debug/mo_constants.o

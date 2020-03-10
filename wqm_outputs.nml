@@ -1,0 +1,58 @@
+! Emacs: -*- mode: f90 -*-
+!1)  First give the timestep for writing gridded model outputs
+!    It should be integer and has to be perfectly divisible 
+!    by the number of total modeling time steps
+!2) Define main outputs of the model as namelist
+!   the particular output flag is specified as .TRUE. / .FALSE
+!   for writing /not writing the output to a file
+! SYNTAX = ".TRUE." or ".FALSE."
+&statevarsoutput
+!
+! switch to control write out frequency of the gridded model outputs below
+! >0: after each <timeStep_model_outputs> time steps
+!  0: only at end of run
+! -1: daily
+! -2: monthly
+! -3: yearly
+timeStep_model_outputs_wqm = -3
+
+!--------------------------------------------------------------------------
+
+!Soil moisture concentration in each layer (L1_csoilMoist)     [mg/l]
+outputFlxState_wqm(1) = .FALSE.
+!Near surface fast runoff concentration (L1_cfastRunoff)     [mg/l]
+outputFlxState_wqm(2) = .FALSE.
+!
+!Interflow concentration (L1_cslowRunoff)     [mg/l] 
+outputFlxState_wqm(3)= .FALSE.
+!Baseflow concentration (L1_cbaseflow)     [mg/l]
+outputFlxState_wqm(4) = .FALSE.
+!Total runoff concentration (L1_ctotal_runoff)     [mg/l]
+outputFlxState_wqm(5) = .FALSE.
+!
+!above write-out the mean value
+!below write-out the accumulative value
+!except the number 10
+!
+!Total uptake amount in terrestrial phase (L1_soilUptakeN) [mg/m^2/setted timestep]
+outputFlxState_wqm(6) = .FALSE.
+!
+!Total denitrification amount (L1_soilDenitri) [mg/m^2/setted timestep]
+outputFlxState_wqm(7) = .FALSE.
+!
+!Total mineralisation amount (L1_soilMineralN) [mg/m^2/setted timestep]
+outputFlxState_wqm(8) = .FALSE.
+!
+!Total frtman applied IN amount (L1_soilINfrtmanapp) [mg/m^2/setted timestep]
+outputFlxState_wqm(9) = .FALSE.
+!
+!output concentration of each reach at routing level (L11_concMod) [mg/l]
+outputFlxState_wqm(10) = .FALSE.
+!
+!Instream denitrification amount (L11_aquaticDenitri) [mg/m^2/setted timestep]
+outputFlxState_wqm(11) = .FALSE.
+!
+!Instream assimilatory uptake amount (L11_aquaticAssimil) [mg/m^2/setted timestep]
+outputFlxState_wqm(12) = .FALSE.
+/
+

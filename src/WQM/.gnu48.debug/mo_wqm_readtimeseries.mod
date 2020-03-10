@@ -1,0 +1,83 @@
+GFORTRAN module version '10' created from /gpfs0/home/yangx/mHM-Nitrate/github4doi/mHM-Nitrate_v2.0/src/WQM/mo_wqm_readtimeseries.f90
+MD5:1fd00adf819ba254e2fb28f9bae039d3 -- If you edit this, you'll get what you deserve.
+
+(() () () () () () () () () () () () () () () () () () () () () () ()
+() () () ())
+
+()
+
+()
+
+()
+
+()
+
+()
+
+(2 'dp' 'mo_kind' '' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+IMPLICIT-SAVE 0 0 IS_C_INTEROP IS_ISO_C) (INTEGER 4 0 1 1 REAL ()) 0 0 ()
+(CONSTANT (INTEGER 4 0 1 1 REAL ()) 0 '8') () 0 () () () 0 0)
+3 'get_heading_column' 'mo_wqm_readtimeseries' '' 1 ((PROCEDURE
+UNKNOWN-INTENT MODULE-PROC DECL UNKNOWN 0 0 SUBROUTINE IMPLICIT_PURE
+ALWAYS_EXPLICIT) (UNKNOWN 0 0 0 0 UNKNOWN ()) 4 0 (5 6 7) () 0 () () ()
+0 0)
+8 'i4' 'mo_kind' '' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+IMPLICIT-SAVE 0 0 IS_C_INTEROP IS_ISO_C) (INTEGER 4 0 1 1 INTEGER ()) 0
+0 () (CONSTANT (INTEGER 4 0 1 1 INTEGER ()) 0 '4') () 0 () () () 0 0)
+9 'mo_kind' 'mo_kind' '' 1 ((MODULE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN 0 0) (UNKNOWN 0 0 0 0 UNKNOWN ()) 0 0 () () 0 () () () 0 0)
+10 'mo_wqm_readtimeseries' 'mo_wqm_readtimeseries' '' 1 ((MODULE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0) (UNKNOWN 0 0 0 0
+UNKNOWN ()) 0 0 () () 0 () () () 0 0)
+11 'read_timeseries_conc' 'mo_wqm_readtimeseries' '' 1 ((PROCEDURE
+UNKNOWN-INTENT MODULE-PROC DECL UNKNOWN 0 0 SUBROUTINE ALWAYS_EXPLICIT)
+(UNKNOWN 0 0 0 0 UNKNOWN ()) 12 0 (13 14 15 16 17 18 19 20 21 22 23 24)
+() 0 () () () 0 0)
+25 'sp' 'mo_kind' '' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+IMPLICIT-SAVE 0 0 IS_C_INTEROP IS_ISO_C) (INTEGER 4 0 1 1 REAL ()) 0 0 ()
+(CONSTANT (INTEGER 4 0 1 1 REAL ()) 0 '4') () 0 () () () 0 0)
+5 'line' '' '' 4 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 DUMMY) (
+CHARACTER 1 0 0 0 CHARACTER ((CONSTANT (INTEGER 4 0 0 0 INTEGER ()) 0
+'256'))) 0 0 () () 0 () () () 0 0)
+6 'nsubcol' '' '' 4 ((VARIABLE OUT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+DUMMY) (INTEGER 4 0 1 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+7 'head_str' '' '' 4 ((VARIABLE OUT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+ALLOCATABLE DIMENSION DUMMY) (CHARACTER 1 0 0 0 CHARACTER ((CONSTANT (
+INTEGER 4 0 0 0 INTEGER ()) 0 '256'))) 0 0 () (1 0 DEFERRED () ()) 0 ()
+() () 0 0)
+13 'filename' '' '' 12 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+DUMMY) (CHARACTER 1 0 0 0 CHARACTER (())) 0 0 () () 0 () () () 0 0)
+14 'fileunit' '' '' 12 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+DUMMY) (INTEGER 4 0 1 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+15 'periodstart' '' '' 12 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+DIMENSION DUMMY) (INTEGER 4 0 1 0 INTEGER ()) 0 0 () (1 0 EXPLICIT (
+CONSTANT (INTEGER 4 0 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 0
+INTEGER ()) 0 '3')) 0 () () () 0 0)
+16 'periodend' '' '' 12 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+DIMENSION DUMMY) (INTEGER 4 0 1 0 INTEGER ()) 0 0 () (1 0 EXPLICIT (
+CONSTANT (INTEGER 4 0 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 0
+INTEGER ()) 0 '3')) 0 () () () 0 0)
+17 'optimize' '' '' 12 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+DUMMY) (LOGICAL 4 0 0 0 LOGICAL ()) 0 0 () () 0 () () () 0 0)
+18 'opti_function' '' '' 12 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0
+0 DUMMY) (INTEGER 4 0 1 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+19 'maxcols' '' '' 12 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+DUMMY) (INTEGER 4 0 1 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+20 'numscol' '' '' 12 ((VARIABLE OUT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+DUMMY) (INTEGER 4 0 1 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+21 'head_str' '' '' 12 ((VARIABLE OUT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+ALLOCATABLE DIMENSION DUMMY) (CHARACTER 1 0 0 0 CHARACTER ((CONSTANT (
+INTEGER 4 0 0 0 INTEGER ()) 0 '256'))) 0 0 () (1 0 DEFERRED () ()) 0 ()
+() () 0 0)
+22 'data_conc' '' '' 12 ((VARIABLE OUT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+ALLOCATABLE DIMENSION DUMMY) (REAL 8 0 1 0 REAL ()) 0 0 () (2 0 DEFERRED
+() () () ()) 0 () () () 0 0)
+23 'mask' '' '' 12 ((VARIABLE OUT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+ALLOCATABLE DIMENSION OPTIONAL DUMMY) (LOGICAL 4 0 0 0 LOGICAL ()) 0 0 ()
+(2 0 DEFERRED () () () ()) 0 () () () 0 0)
+24 'ncmeasperday' '' '' 12 ((VARIABLE OUT UNKNOWN-PROC UNKNOWN UNKNOWN 0
+0 OPTIONAL DUMMY) (INTEGER 4 0 1 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+)
+
+('dp' 0 2 'get_heading_column' 0 3 'i4' 0 8 'mo_kind' 0 9
+'mo_wqm_readtimeseries' 0 10 'read_timeseries_conc' 0 11 'sp' 0 25)

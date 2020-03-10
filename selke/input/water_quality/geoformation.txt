@@ -1,0 +1,28 @@
+nGeo_Units    23
+GeoParam(i) ClassUnit   Formation           
+1           0        1 
+2		    2        1
+3		    3        1
+4		    4        1
+5		    5        1
+6		    6        1
+7		    7        1
+8		    8        1
+9		    9        1
+10		    10       2
+11		    11       1
+12		    12       1
+13		    99       1
+14		    102      1
+15		    103      1
+16		    104      1
+17		    105      1
+18		    106      1
+19		    107      1
+20		    109      1
+21		    110      1
+22		    111      1
+23        	112      1
+!<-END
+! Formation 1 - permeable sedimentary materials
+!           2 - impermeable bedrock

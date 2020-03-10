@@ -1,0 +1,2 @@
+/gpfs0/home/yangx/mHM-Nitrate/github4doi/mHM-Nitrate_v2.0/src/mHM/.gnu48.debug/mo_snow_accum_melt.d : /gpfs0/home/yangx/mHM-Nitrate/github4doi/mHM-Nitrate_v2.0/src/mHM/mo_snow_accum_melt.f90
+/gpfs0/home/yangx/mHM-Nitrate/github4doi/mHM-Nitrate_v2.0/src/mHM/.gnu48.debug/mo_snow_accum_melt.o : /gpfs0/home/yangx/mHM-Nitrate/github4doi/mHM-Nitrate_v2.0/src/mHM/.gnu48.debug/mo_snow_accum_melt.d /gpfs0/home/yangx/mHM-Nitrate/github4doi/mHM-Nitrate_v2.0/src/lib/.gnu48.debug/mo_kind.o
