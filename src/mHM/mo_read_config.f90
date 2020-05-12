@@ -1220,7 +1220,7 @@ CONTAINS
        processMatrix(10, 3) = sum(processMatrix(1:10, 2))
     end if
     !---------------------------------------------
-    !***Nitrate parameters***
+    !***Nitrate parameters*** --by yangx
     ! Process 11 - nutrient submodel(nitrogen)
     ! 0 - deactivated
     ! 1 - nitrogen submodel included

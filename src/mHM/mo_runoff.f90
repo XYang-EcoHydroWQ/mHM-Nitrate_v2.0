@@ -304,7 +304,7 @@ CONTAINS
     REAL(dp), INTENT(IN)    :: baseflow
     REAL(dp), INTENT(IN)    :: direct_runoff
     REAL(dp), INTENT(OUT)   :: total_runoff
-
+    ! modified by yangx
     total_runoff = (baseflow + slow_interflow + fast_interflow)   + &
                    ( direct_runoff )  
     ! total_runoff = (baseflow + slow_interflow + fast_interflow) *(1-fSealed_area_fraction)  + &

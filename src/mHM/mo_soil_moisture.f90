@@ -166,7 +166,7 @@ CONTAINS
     aet_sealed    = 0.0_dp
 
     if (frac_sealed > 0.0_dp) then
-       tmp = storage_sealed + prec_effec * frac_sealed
+       tmp = storage_sealed + prec_effec * frac_sealed  !modified by yangx
 
        if (tmp > water_thresh_sealed) then
           runoff_sealed  = tmp - water_thresh_sealed
@@ -178,6 +178,7 @@ CONTAINS
 
        ! aET from sealed area is propotional to the available water content
        if(water_thresh_sealed .gt. eps_dp ) then 
+          !modified by yangx
           aet_sealed = frac_sealed * ( pet / evap_coeff - aet_canopy) * (storage_sealed / water_thresh_sealed)
           ! numerical problem
           if (aet_sealed .lt. 0.0_dp) aet_sealed = 0.0_dp
@@ -202,7 +203,7 @@ CONTAINS
     infiltration(:) = 0.0_dp
 
     ! for 1st layer input is prec_effec
-    prec_effec_soil = prec_effec * (1-frac_sealed)
+    prec_effec_soil = prec_effec * (1-frac_sealed) !modified by yangx
     
     do hh = 1, size(soil_moist_sat,1) ! nHorizons
        ! input for other layers is the infiltration from its immediate upper layer will be input
