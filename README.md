@@ -8,9 +8,9 @@ The presented source code is developed based on the mHM version 5.5 (the version
 ## Citations ##
 Please refer to the following publications:
 
-Yang, X., Jomaa, S., Büttner, O., & Rode, M. (2019), Autotrophic nitrate uptake in river networks: A modeling approach using continuous high-frequency data, Water Research, 157, 258-268. https://doi.org/10.1016/j.watres.2019.02.059.
-
 Yang, X., Jomaa, S., Zink, M., Fleckenstein, J. H., Borchardt, D., & Rode, M. (2018), A new fully distributed model of nitrate transport and removal at catchment scale, Water Resources Research, 54(8), 5856-5877. https://doi.org/10.1029/2017WR022380.
+
+Yang, X., Jomaa, S., Büttner, O., & Rode, M. (2019), Autotrophic nitrate uptake in river networks: A modeling approach using continuous high-frequency data, Water Research, 157, 258-268. https://doi.org/10.1016/j.watres.2019.02.059.
 
 ## Steps to run the model ##
 1. Download the mHM (v5.5) hydrological code  under the link:https://github.com/mhm-ufz/mhm/releases. 
