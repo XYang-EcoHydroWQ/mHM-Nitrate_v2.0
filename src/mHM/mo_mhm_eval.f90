@@ -227,7 +227,7 @@ CONTAINS
          L11_concMod,                            & !inout 
          L11_aquaticDenitri, L11_aquaticAssimil,  & !
          nor_globalradi, L11_fLAI, L11_rzcoeff,   & !
-         L11_rdeniAqtc,L11_rpprodN, L11_flight,    & !
+         L11_rdeniAqtc,L11_ratuptkN, L11_rpprodN, L11_flight,    & !
          basin_wqm, nCroptation,         & !
          WQM_nutrient,   & !
          timeStep_model_outputs_wqm, outputFlxState_wqm
@@ -711,7 +711,8 @@ CONTAINS
                   L11_concOUT(s11:e11,:), L11_interload(s11:e11,:), L11_concTIN(s11:e11,:),    & !inout dim2=substances                  
                   L11_concMod(s11:e11,:),                            & !inout 
                   L11_aquaticDenitri(s11:e11), L11_aquaticAssimil(s11:e11),   & ! inout
-                  L11_rdeniAqtc(s11:e11), L11_rpprodN(s11:e11), L11_rzcoeff(s11:e11),L11_flight(s11:e11) )
+                  L11_rdeniAqtc(s11:e11),L11_ratuptkN(s11:e11), L11_rpprodN(s11:e11), & !
+                  L11_rzcoeff(s11:e11),L11_flight(s11:e11) )
              !storing calcualted concentration at evaluation gauges
              do cg=1, basin_mrm%nGauges(ii)
                 if (basin_mrm%gaugeNodeList(ii,cg) .ne. nodata_i4) then

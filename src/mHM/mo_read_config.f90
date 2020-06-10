@@ -1220,7 +1220,7 @@ CONTAINS
        processMatrix(10, 3) = sum(processMatrix(1:10, 2))
     end if
     !---------------------------------------------
-    !***Nitrate parameters*** --by yangx
+    !***Nitrate parameters***
     ! Process 11 - nutrient submodel(nitrogen)
     ! 0 - deactivated
     ! 1 - nitrogen submodel included
@@ -1228,7 +1228,7 @@ CONTAINS
     select case (processCase(11))
     case (1)
        processMatrix(11,1) = processCase(11)
-       processMatrix(11,2) = 11
+       processMatrix(11,2) = 12
        processMatrix(11,3) = sum(processMatrix(1:11,2))
     case (0)
        call message(' INFO: WATER QUALITY(Nitrogen submodel) IS DEACTIVATED.')

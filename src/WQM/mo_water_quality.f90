@@ -195,6 +195,7 @@ CONTAINS
       aquatic_denitri,   & ! N denitrified in stream water
       aquatic_assimil,   & ! N uptake (assimilatory) amount in stream water
       adenitr_rate,      & ! parameter: denitrification rate in aquatic system (in-stream) 
+      atruptk_rate,     & ! parameter: autotrophic uptake rate in-stream mgNm-2d-1 
       priprod_rate,      & ! parameter: assimilatory(primary production) rate in aquatic system	  
       nLink_rzcoeff,     & ! riparian zone shading coefficient 
       nLink_flight)      ! moving averaged shading coefficient
@@ -335,6 +336,7 @@ CONTAINS
     real(dp), dimension(:),        intent(inout):: aquatic_denitri
     real(dp), dimension(:),        intent(inout):: aquatic_assimil
     real(dp), dimension(:),        intent(inout):: adenitr_rate
+    real(dp), dimension(:),        intent(inout):: atruptk_rate
     real(dp), dimension(:),        intent(inout):: priprod_rate
     real(dp), dimension(:),        intent(inout):: nLink_rzcoeff
     real(dp), dimension(:),        intent(inout):: nLink_flight
@@ -404,7 +406,7 @@ CONTAINS
        !nitrate parameters upscaling
        if (perform_mpr) then
           call wqm_mpr( nNodes, L1id_on_L11, L11id_on_L1, map_flag, processMatrix,global_parameter, fLAI, fLAI_11, &
-               degradN_rate, mineraN_rate, dissolN_rate,sdenitr_rate, adenitr_rate, priprod_rate, nLink_from, &
+               degradN_rate, mineraN_rate, dissolN_rate,sdenitr_rate, adenitr_rate,atruptk_rate, priprod_rate, nLink_from, &
                areaCell1, areaCell11)
        end if
 
@@ -515,7 +517,7 @@ CONTAINS
     !in-stream processes
     call conc_routing_process(nNodes, nNodes-1 ,no_day, timeStep, nPerm, nLink_from, nLink_to, nLink_length, &
        nNode_qOUT,nNode_qTR, nNode_concOUT,nNode_interload,nNode_concTIN,nLink_riverbox, nLink_criverbox,nLink_yravg_q,&
-       nLink_rivertemp,nNode_concMod, aquatic_denitri, aquatic_assimil, adenitr_rate, priprod_rate, &
+       nLink_rivertemp,nNode_concMod, aquatic_denitri, aquatic_assimil, adenitr_rate, atruptk_rate,priprod_rate, &
        globalradi_nor, nLink_rzcoeff, nLink_flight)
 
 
@@ -550,6 +552,7 @@ CONTAINS
   !>        \param[in] "real(dp), dimension(:,:)        :: nNode_concOUT"     conc. of total outflow from L11 cells  
   !>        \param[in] "real(dp), dimension(:)          :: rivertemp11"       reach temperature
   !>        \param[in] "real(dp), dimension(:)          :: pardeniratew"      denitrification rate in aquatic 
+  !>        \param[in] "real(dp), dimension(:),         :: parautouptkrate"   potiential autotrophic uptake mgNm-2d-1
   !>        \param[in] "real(dp), dimension(:)          :: parprodrate"       assimilatory rate in aquatic   
 
   !     INTENT(INOUT)
@@ -593,7 +596,8 @@ CONTAINS
   !>        \date Sep 2016
   subroutine conc_routing_process(nNodes, nLinks, no_day, TS, nPerm, nLink_from, nLink_to, nLink_length,  &
        nNode_qOUT, nNode_qTR, nNode_concOUT, nNode_interload, nNode_concTIN, nLink_riverbox, nLink_criverbox, nLink_yravg_q, &
-       rivertemp11, nNode_concMod, aquatic_denitri, aquatic_assimil,pardeniratew, parprodrate, nor_gr,rz_coeff, f_light)
+       rivertemp11, nNode_concMod, aquatic_denitri, aquatic_assimil,pardeniratew, parautouptkrate, parprodrate, &
+       nor_gr,rz_coeff, f_light)
   
   use mo_wqm_global_variables,     only: L11_rivert_avg10, L11_rivert_avg20  !, L11_flightglobal state variables for moving average
   
@@ -626,6 +630,7 @@ CONTAINS
   real(dp), dimension(:),          intent(inout) :: aquatic_assimil   ! amount of assimilatory(primary production)
   !WQ parameters
   real(dp), dimension(:),          intent(in)    :: pardeniratew      !denitrification rate in aquatic 
+  real(dp), dimension(:),          intent(in)    :: parautouptkrate   !potiential autotrophic uptake mgNm-2d-1
   real(dp), dimension(:),          intent(in)    :: parprodrate       !assimilatory rate in aquatic  
   real(dp),                        intent(in)    :: nor_gr            !normalised global radiation (daily)  
   real(dp), dimension(:),          intent(inout)    :: rz_coeff          !rz shading coefficient dim = number of reaches
@@ -675,7 +680,7 @@ CONTAINS
      L11_rivert_avg20(i) = L11_rivert_avg20(i) + (rivertemp11(i) - L11_rivert_avg20(i)) / (20.0_dp )
      call instream_nutrient_processes(TS,no_day,i, rivertemp11(i), L11_rivert_avg10(i), L11_rivert_avg20(i), &
          benthic_area, depth, nLink_riverbox(i), nLink_criverbox(i,:),aquatic_denitri(i), aquatic_assimil(i), &
-        pardeniratew(i), parprodrate(i), nor_gr, rz_coeff(i), f_light(i))
+        pardeniratew(i),parautouptkrate(i), parprodrate(i), nor_gr, rz_coeff(i), f_light(i))
 
      !update water volumn of reach(link) 
      nLink_riverbox(i) = nLink_riverbox(i) - nNode_qTR(iNode) * sec_TS
@@ -721,6 +726,7 @@ CONTAINS
   !>        \param[in] "real(dp)                       :: benthic_area"  [m2]reach benthic area
   !>        \param[in] "real(dp)                       :: depth"         [m]average reach depth 
   !>        \param[in] "real(dp)                       :: pardeniratew"  parameter
+  !>        \param[in] "real(dp)                       :: parautouptkrate"  parameter
   !>        \param[in] "real(dp)                       :: parprodrate"   parameter
   !     INTENT(INOUT)
   !>        \param[inout] "real(dp)                       :: riverbox"    river water volumn in each reach  
@@ -760,9 +766,10 @@ CONTAINS
   !>        X. Yang Jun 2017 enabled different time-step (hourly)
 
   subroutine instream_nutrient_processes(TS,no_day,i, rivertemp11, rt_avg10, rt_avg20, benthic_area, depth, &
-        riverbox, criverbox, aqdenitri, aqassimil, pardeniratew, parprodrate,nor_gr, rz_coeff, f_light)
+        riverbox, criverbox, aqdenitri, aqassimil, pardeniratew,parautouptkrate, parprodrate,nor_gr, rz_coeff, f_light)
 
   use mo_wqm_shadingeffect,      only: rz_shading_coeff
+  use mo_wqm_global_variables,   only: GR_file_exist
   implicit none
   integer(i4),                    intent(in)     :: TS
   integer(i4),                    intent(in)     :: no_day     ! for light calculate -- shading effect
@@ -777,6 +784,7 @@ CONTAINS
   real(dp),                       intent(out)  :: aqdenitri    
   real(dp),                       intent(out)  :: aqassimil    
   real(dp),                       intent(in)     :: pardeniratew
+  real(dp),                       intent(in)     :: parautouptkrate
   real(dp),                       intent(in)     :: parprodrate  
   real(dp),                       intent(in)     :: nor_gr   ! for shading effect
   real(dp),                       intent(inout)  :: rz_coeff ! coefficient for each reach
@@ -817,46 +825,46 @@ CONTAINS
     criverbox(1) = 0.0_dp
   end if
   !primary production and mineralisation (inverse processes)
+  if (GR_file_exist) then
+    !##############################################
+    !##new method considering light availability ##
+    !##############################################
+    call rz_shading_coeff(i, no_day, nor_gr, rz_coeff)
+    f_light = f_light + (rz_coeff-f_light) / 5.0_dp
 
-  !##method from HYPE##
-  !f_light = 1.0_dp    !deactive light method     
-  tp_ave = tpmean   ! since phorsphose is not implemented at the monment..
-  f_tp = tp_ave / (tp_ave + halfsatIPwater)
-  ONpool = riverbox * criverbox(2) /1000.0_dp
-  if (rivertemp11 > 0.0_dp) then
-     f_temp1 = rivertemp11 /20.0_dp
+    aqassimil =0.0_dp
+    aqassimil0 = 0.0_dp
+    if (rivertemp11 >= 0.0_dp) then
+       aqassimil0 =  parautouptkrate* f_light * activedepth * benthic_area * 10E-6 /DT   ![kg]
+	   ! here the parautouptkrate (potential N autotrophic uptake = 300 mg N m-2 d-1) 
+       aqassimil0 = min(0.9_dp *INpool*activedepth, aqassimil0 )  
+       !mineralization (respiration) assumed part of autotrophic assimilation
+       aqassimil = parprodrate*aqassimil0
+       !aqassimil = min(maxprodwater*INpool*activedepth, aqassimil )
+    end if
   else
-     f_temp1 = 0.0_dp
-  end if  
-  f_temp2 = (rt_avg10 - rt_avg20) / 5.0_dp  
-  f_temp = f_temp1 * f_temp2
-
-  !##############################################
-  !##new method considering light availability ##
-  !##############################################
-  f_temp = 1.0_dp  !deactive temperature effect
-  call rz_shading_coeff(i, no_day, nor_gr, rz_coeff)
-  f_light = f_light + (rz_coeff-f_light) / 5.0_dp
-
-  aqassimil =0.0_dp
-  aqassimil0 = 0.0_dp
-  if (rivertemp11 >= 0.0_dp) then
-     aqassimil0 =  300* f_light * activedepth * benthic_area * 10E-6 /DT
-
-     !mineralization (respiration) assumed part of autotrophic assimilation
-     aqassimil = parprodrate*aqassimil0
-     aqassimil = min(maxprodwater*INpool*activedepth, aqassimil )
-     !original mHM-Nitrate version adopted from HYPE model
-     !aqassimil = parprodrate * f_temp * f_tp * activedepth * depth * benthic_area/ DT !
-     !if (f_temp2 > 0.0_dp) then
-     !   aqassimil = min(maxprodwater*INpool*activedepth, aqassimil ) 
-     !else
-     !   aqassimil = max(-maxprodwater*ONpool*activedepth, -aqassimil) 
-     !end if
+    !##method from HYPE##    
+    tp_ave = tpmean   ! since phorsphose is not implemented at the monment..
+    f_tp = tp_ave / (tp_ave + halfsatIPwater)
+    ONpool = riverbox * criverbox(2) /1000.0_dp
+    if (rivertemp11 > 0.0_dp) then
+       f_temp1 = rivertemp11 /20.0_dp
+    else
+       f_temp1 = 0.0_dp
+    end if  
+    f_temp2 = (rt_avg10 - rt_avg20) / 5.0_dp  
+    f_temp = f_temp1 * f_temp2
+    aqassimil =0.0_dp
+    if (rivertemp11 >= 0.0_dp) then
+       aqassimil = parprodrate * f_temp * f_tp * activedepth * depth * benthic_area/ DT !
+       if (aqassimil > 0.0_dp) then
+          aqassimil = min(maxprodwater*INpool*activedepth, aqassimil ) 
+       else
+          aqassimil = max(-maxprodwater*ONpool*activedepth, aqassimil) 
+       end if
+    end if
   end if
-  
-  
-  aqassimil0 = min(0.9_dp *INpool*activedepth, aqassimil0 )  
+
   
   
   INpool = INpool - aqassimil
@@ -869,8 +877,8 @@ CONTAINS
     criverbox(2) = 0.0_dp
   end if 
   
-  !!temporally for pure assimiloray uptake
-  aqassimil = aqassimil0
+  !!for writing out pure assimiloray uptake
+  !aqassimil = aqassimil0
    
 
 

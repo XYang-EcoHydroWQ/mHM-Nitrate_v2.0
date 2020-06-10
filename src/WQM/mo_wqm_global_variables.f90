@@ -171,11 +171,13 @@ MODULE mo_wqm_global_variables
                                                                              !   corresponding to "L11_qMod"
   !model parameters in parameter namelist
   real(dp), dimension(:),       allocatable, public      :: L11_rdeniAqtc    ! denitrification rate in aquatic system(river)
+  real(dp), dimension(:),       allocatable, public      :: L11_ratuptkN     ! autotropic N uptake mgNm-2d-1
   real(dp), dimension(:),       allocatable, public      :: L11_rpprodN      ! assimilatory rate in aquatic system
   ! state variables for uptake amount
   real(dp), dimension(:),       allocatable, public      :: L11_aquaticDenitri  ! N denitrified in stream water 
   real(dp), dimension(:),       allocatable, public      :: L11_aquaticAssimil  !N uptake (assimilatory) amount in stream water
   ! global radiation for in-stream Primarily production  
+  logical, public                                        :: GR_file_exist = .FALSE.  ! if the "global_radiation.txt" presents or not
   real(dp), dimension(:,:),     allocatable, public      :: global_radiation 
                                                            ! measured global radiation data, dim1=nbasin,dim2=nosimulatedays
   real(dp), dimension(:,:),     allocatable, public      :: nor_globalradi   ! normalised global radiation

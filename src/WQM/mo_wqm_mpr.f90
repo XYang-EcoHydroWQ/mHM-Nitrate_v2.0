@@ -51,6 +51,7 @@ CONTAINS
   !>        \param[out] "real(dp), dimension(:)             :: sdenitr_rate"   parameter   
   !>        \param[out] "real(dp), dimension(:)             :: gwresid_time"   parameter  
   !>        \param[out] "real(dp), dimension(:)             :: adenitr_rate"   parameter   
+  !>        \param[out] "real(dp), dimension(:)             :: atruptk_rate"   parameter
   !>        \param[out] "real(dp), dimension(:)             :: priprod_rate"   parameter   
 
   !     INTENT(IN), OPTIONAL
@@ -80,7 +81,7 @@ CONTAINS
   !>        \date Jun 2017
 
   subroutine wqm_mpr( nNodes, L1id_on_L11, L11id_on_L1, map_flag, procMat,param, fLAI, fLAI_11, degradN_rate, &
-                     mineraN_rate, dissolN_rate, sdenitr_rate, adenitr_rate, priprod_rate, nLink_from, &
+                     mineraN_rate, dissolN_rate, sdenitr_rate, adenitr_rate,atruptk_rate, priprod_rate, nLink_from, &
                      areaCell1, areaCell11 )
 
   use mo_message,   only: message
@@ -98,7 +99,8 @@ CONTAINS
   real(dp), dimension(:),            intent(out)    :: mineraN_rate ! parameter   
   real(dp), dimension(:),            intent(out)    :: dissolN_rate ! parameter   
   real(dp), dimension(:),            intent(out)    :: sdenitr_rate ! parameter    
-  real(dp), dimension(:),            intent(out)    :: adenitr_rate ! parameter   
+  real(dp), dimension(:),            intent(out)    :: adenitr_rate ! parameter  
+  real(dp), dimension(:),            intent(out)    :: atruptk_rate ! parameter   
   real(dp), dimension(:),            intent(out)    :: priprod_rate ! parameter
   integer(i4), dimension(:),         intent(in)     :: nLink_from   ! id of Node where current reach connects from
   real(dp), dimension(:),            intent(in)     :: areaCell1    ! cell area at L1
@@ -113,7 +115,7 @@ CONTAINS
   istart = 1_i4
   iend   = procMat(11,3) - procMat(10,3)
 
-  if (iend .ne. (istart +10)) then
+  if (iend .ne. (istart +11)) then
      call message()
      call message('***ERROR: the number of nitrogen parameters in mhm_parameter.nml does not match the model structure!')
 	 
@@ -122,7 +124,7 @@ CONTAINS
 
   !general parameter
   adenitr_rate(:) = param(istart)
-
+  atruptk_rate(:) = param(istart+1) !the autotrophic N uptake is a general parameter
   !considering the difference of arable denitri_rate and other denitri_rate
   !instream paramters, at L11 level
   !priprod_rate(:) = param(istart + 1) 
@@ -138,9 +140,9 @@ CONTAINS
       do nn=1, size(fLAI,2)
       fLAI_11(mm,nn) = sum(fLAI(:,nn) * areaCell1(:) / areaCell11(k) , L11id_on_L1(:) .eq. k ) !* nNodes / real(ncells1, dp)
       if ((nn == 9) .or. (nn == 7)) then
-         priprod_rate(mm) = priprod_rate(mm) + fLAI_11(mm,nn) * param(istart + 2)
+         priprod_rate(mm) = priprod_rate(mm) + fLAI_11(mm,nn) * param(istart + 3)
       else
-         priprod_rate(mm) = priprod_rate(mm) + fLAI_11(mm,nn) * param(istart + 1) 
+         priprod_rate(mm) = priprod_rate(mm) + fLAI_11(mm,nn) * param(istart + 2) 
      end if
       end do
 
@@ -148,9 +150,9 @@ CONTAINS
       do nn=1, size(fLAI,2)
       fLAI_11(mm,nn) = fLAI(L1id_on_L11(k),nn)
       if ((nn == 9) .or. (nn == 7)) then
-         priprod_rate(mm) = priprod_rate(mm) + fLAI_11(mm,nn) * param(istart + 2)
+         priprod_rate(mm) = priprod_rate(mm) + fLAI_11(mm,nn) * param(istart + 3)
       else
-         priprod_rate(mm) = priprod_rate(mm) + fLAI_11(mm,nn) * param(istart + 1)
+         priprod_rate(mm) = priprod_rate(mm) + fLAI_11(mm,nn) * param(istart + 2)
       end if
       end do
      end if
@@ -165,15 +167,15 @@ CONTAINS
   do k = 1, size(fLAI,1) 
   do nn=1, size(fLAI,2) 
   if ((nn==9) .or. (nn == 7)) then
-     degradN_rate(k) = degradN_rate(k) + fLAI(k,nn) * param(istart + 4) 
+     degradN_rate(k) = degradN_rate(k) + fLAI(k,nn) * param(istart + 5) 
+     mineraN_rate(k) = mineraN_rate(k) + fLAI(k,nn) * param(istart + 7) 
+     dissolN_rate(k) = dissolN_rate(k) + fLAI(k,nn) * param(istart + 9) 
+     sdenitr_rate(k) = sdenitr_rate(k) + fLAI(k,nn) * param(istart + 11)
+  else
+     degradN_rate(k) = degradN_rate(k) + fLAI(k,nn) * param(istart + 4)
      mineraN_rate(k) = mineraN_rate(k) + fLAI(k,nn) * param(istart + 6) 
      dissolN_rate(k) = dissolN_rate(k) + fLAI(k,nn) * param(istart + 8) 
      sdenitr_rate(k) = sdenitr_rate(k) + fLAI(k,nn) * param(istart + 10)
-  else
-     degradN_rate(k) = degradN_rate(k) + fLAI(k,nn) * param(istart + 3)
-     mineraN_rate(k) = mineraN_rate(k) + fLAI(k,nn) * param(istart + 5) 
-     dissolN_rate(k) = dissolN_rate(k) + fLAI(k,nn) * param(istart + 7) 
-     sdenitr_rate(k) = sdenitr_rate(k) + fLAI(k,nn) * param(istart + 9)
   end if
   end do    
   end do

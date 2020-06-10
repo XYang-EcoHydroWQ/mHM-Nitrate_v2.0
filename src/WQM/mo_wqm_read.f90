@@ -299,6 +299,7 @@ CONTAINS
   real(dp), dimension(nColPars)   :: dissolutionN_rate_agri     ![mm/m]balance between fast pool and soil water orgainc pool
   !real(dp), dimension(nColPars)   :: groundwater_residtime !reflecting resident time for calculating groundwater conc.
                                                            !(equation from INCA model)
+  real(dp), dimension(nColPars)   :: autotrophicuptk_rate  ![mgN/m2/d]
   real(dp), dimension(nColPars)   :: primaryprod_rate          ![kg.m^2/d]primary production in aquatic system (nuptake)
   real(dp), dimension(nColPars)   :: primaryprod_rate_agri     ![kg.m^2/d]primary production in aquatic system (nuptake)
   real(dp), dimension(nColPars)   :: denitrification_aquatic     ![kg.m^3/d]IN denitrification rate in aquatic system
@@ -311,9 +312,10 @@ CONTAINS
   namelist /wqm_addinflow_gauges/ wqm_inflowgauge_filename
   !parameter namelist: mhm_parameter.nml
   !Nitrogen sub-model
-  namelist /nutrientparameter/ denitrification_aquatic, primaryprod_rate,primaryprod_rate_agri,degradationN_rate,&
-                               degradationN_rate_agri, mineralisationN_rate,mineralisationN_rate_agri,dissolutionN_rate,&
-                               dissolutionN_rate_agri, denitrification_soil,denitrification_agrisoil
+  namelist /nutrientparameter/ denitrification_aquatic,autotrophicuptk_rate, primaryprod_rate,primaryprod_rate_agri,&
+                               degradationN_rate,degradationN_rate_agri, mineralisationN_rate,&
+                               mineralisationN_rate_agri,dissolutionN_rate,dissolutionN_rate_agri, &
+                               denitrification_soil,denitrification_agrisoil
   namelist /statevarsoutput/timeStep_model_outputs_wqm, outputFlxState_wqm 
   !filenames are hard coded here
   file_namelist_wqm = "mhm.nml"
@@ -382,10 +384,11 @@ CONTAINS
   call position_nml('nutrientparameter', 89)
   read(89, nml=nutrientparameter)
   processMatrix(11,1) = 1_i4                   ! if wqm_config is processing, then this process should be turned on (=1)
-  processMatrix(11,2) = 11_i4                   ! seven parameters are introduced              
+  processMatrix(11,2) = 12_i4                   ! eight parameters are introduced              
   processMatrix(11,3) = sum(processMatrix(1:11,2)) 
 
   call append(global_parameters, reshape(denitrification_aquatic,(/1,nColPars/)))
+  call append(global_parameters, reshape(autotrophicuptk_rate,(/1,nColPars/)))
   call append(global_parameters, reshape(primaryprod_rate,(/1,nColPars/)))
   call append(global_parameters, reshape(primaryprod_rate_agri,(/1,nColPars/)))
   call append(global_parameters, reshape(degradationN_rate,(/1,nColPars/)))
@@ -401,6 +404,7 @@ CONTAINS
 
   call append(global_parameters_name, (/&
             'denitrification_aquatic     ',&
+            'autotrophicuptk_rate        ',&
             'primaryprod_rate            ',&
             'primaryprod_rate_agri       ',&
             'degradationN_rate           ',&
@@ -571,7 +575,8 @@ CONTAINS
          init_fastN,   & !
          hnhalf,       & !
          Geoform,      & !
-         L0_cover_rotation, &!
+         L0_cover_rotation, & !
+         GR_file_exist, & !
          global_radiation, &  !
          norlai_daily,     & !
          nor_globalradi  
@@ -589,6 +594,7 @@ CONTAINS
     integer(i4)      :: funit  
     integer(i4), dimension(:,:), allocatable   :: data_i4_2d
     logical, dimension(:,:), allocatable       :: mask_2d
+    logical                                    :: file_exist
     !variables for global radiation
     !## added by yangx Nov 2016 ##
      
@@ -629,7 +635,7 @@ CONTAINS
     !read input of geological formation--
     !allocate
     if (.not. allocated(Geoform) ) allocate(Geoform(nGeoUnits) )   
-	fName = trim(adjustl(dirInputWQM(1))) // trim(adjustl("geoformation.txt") )
+    fName = trim(adjustl(dirInputWQM(1))) // trim(adjustl("geoformation.txt") )
     funit =89
     open(funit, file= fName, action='read')
 	
@@ -731,100 +737,108 @@ CONTAINS
 	!## BASIN AVERAGE GLOBAL RADIATION (for in-stream shading effect)##
 	!##################################################################
     fName = trim(adjustl(dirInputWQM(iBasin) )) // trim(adjustl("global_radiation.txt") )
-    funit = 116
+	!to check if the "actual_cropNuptk.txt" exists or not
+    INQUIRE(file = fName, exist = file_exist)
+    GR_file_exist = file_exist  !update the variable value
+    if (GR_file_exist) then
+      fName = trim(adjustl(dirInputWQM(iBasin) )) // trim(adjustl("global_radiation.txt") )
+      funit = 116
 
-    start_period = (/simPer(iBasin)%yStart, simPer(iBasin)%mStart, simPer(iBasin)%dStart/)
-    end_period   = (/simPer(iBasin)%yEnd,   simPer(iBasin)%mEnd,   simPer(iBasin)%dEnd  /) 
-    open(funit, file = fName, action = 'read')
-      ! read header
-      read(funit,'(a256)') dummy
-      read(funit,*)        dummy, nodata_file
-      read(funit,*)        dummy, (start_period_file(i), i = 1, 3)
-      read(funit,*)        dummy, (end_period_file(i),   i = 1, 3)
-      read(funit,'(a256)') line     
-      dummy = dummy//''   ! only to avoid warning 
+      start_period = (/simPer(iBasin)%yStart, simPer(iBasin)%mStart, simPer(iBasin)%dStart/)
+      end_period   = (/simPer(iBasin)%yEnd,   simPer(iBasin)%mEnd,   simPer(iBasin)%dEnd  /) 
+      open(funit, file = fName, action = 'read')
+        ! read header
+        read(funit,'(a256)') dummy
+        read(funit,*)        dummy, nodata_file
+        read(funit,*)        dummy, (start_period_file(i), i = 1, 3)
+        read(funit,*)        dummy, (end_period_file(i),   i = 1, 3)
+        read(funit,'(a256)') line     
+        dummy = dummy//''   ! only to avoid warning 
+	    !
+        start_jul = julday(start_period(3),start_period(2),start_period(1))
+        end_jul   = julday(end_period(3),end_period(2),end_period(1)) 
+        start_jul_file = julday(start_period_file(3),start_period_file(2),start_period_file(1))
+        end_jul_file   = julday(end_period_file(3),end_period_file(2),end_period_file(1)) 
 	  !
-      start_jul = julday(start_period(3),start_period(2),start_period(1))
-      end_jul   = julday(end_period(3),end_period(2),end_period(1)) 
-      start_jul_file = julday(start_period_file(3),start_period_file(2),start_period_file(1))
-      end_jul_file   = julday(end_period_file(3),end_period_file(2),end_period_file(1)) 
-	  !
-      if ((start_jul < start_jul_file) .or. (end_jul > end_jul_file)) then
-         print*, 'simulation period is not fully covered by global radiation data,' 
-         print*, 'average value is given by default!!'
-      end if
-	  !allocate period 
-      allocate(gr_file(end_jul_file - start_jul_file +1_i4))
-      allocate(gr_mask(end_jul_file - start_jul_file +1_i4))
-      allocate(gr_data(1, end_jul - start_jul + 1_i4))
+        if ((start_jul < start_jul_file) .or. (end_jul > end_jul_file)) then
+           print*, 'simulation period is not fully covered by global radiation data,' 
+           print*, 'average value is given by default!!'
+        end if
+	    !allocate period 
+        allocate(gr_file(end_jul_file - start_jul_file +1_i4))
+        allocate(gr_mask(end_jul_file - start_jul_file +1_i4))
+        allocate(gr_data(1, end_jul - start_jul + 1_i4))
 
-	  !default value
-      gr_file = nodata_file
-      gr_mask = .TRUE.
+	    !default value
+        gr_file = nodata_file
+        gr_mask = .TRUE.
 
 	  
-      do i = 1, (end_jul_file - start_jul_file + 1_i4)
-         read(funit, *) (file_time(j), j = 1,3), gr_file(i)
-      end do 
-      where (abs(gr_file - nodata_file) .lt. tiny(1.0_dp)) 
-         gr_mask = .FALSE.
-      end where
-      avg_gr = sum(gr_file, gr_mask)/ max(1,count(gr_mask))
-      !set average global radiation value as default
-      gr_data(1,:) = avg_gr
+        do i = 1, (end_jul_file - start_jul_file + 1_i4)
+           read(funit, *) (file_time(j), j = 1,3), gr_file(i)
+        end do 
+        where (abs(gr_file - nodata_file) .lt. tiny(1.0_dp)) 
+           gr_mask = .FALSE.
+        end where
+        avg_gr = sum(gr_file, gr_mask)/ max(1,count(gr_mask))
+        !set average global radiation value as default
+        gr_data(1,:) = avg_gr
 	  
-      length_file   = (end_jul_file   - start_jul_file   + 1 )
-      length_period = (end_jul - start_jul + 1 )
-      !Merge file data to global variable
-      !       |---------------------------------|    FILE
-      !                  |--------------|            PERIOD
-      if (( start_jul .ge. start_jul_file ) .and. ( end_jul .le. end_jul_file )) then
-         idx_st_period = 1
-         idx_en_period = length_period 
-         idx_st_file   = start_jul - start_jul_file + 1  
-         idx_en_file   = idx_st_file + length_period     - 1 
-      end if
+        length_file   = (end_jul_file   - start_jul_file   + 1 )
+        length_period = (end_jul - start_jul + 1 )
+        !Merge file data to global variable
+        !       |---------------------------------|    FILE
+        !                  |--------------|            PERIOD
+        if (( start_jul .ge. start_jul_file ) .and. ( end_jul .le. end_jul_file )) then
+           idx_st_period = 1
+           idx_en_period = length_period 
+           idx_st_file   = start_jul - start_jul_file + 1  
+           idx_en_file   = idx_st_file + length_period     - 1 
+        end if
 
-      !                  |--------------|            FILE
-      !       |---------------------------------|    PERIOD
-      if (( start_jul .lt. start_jul_file ) .and. ( end_jul .gt. end_jul_file )) then
-         idx_st_period = start_jul_file - start_jul + 1  
-         idx_en_period = idx_st_period + length_file     - 1 
-         idx_st_file   = 1
-         idx_en_file   = length_file      
-      end if
+        !                  |--------------|            FILE
+        !       |---------------------------------|    PERIOD
+        if (( start_jul .lt. start_jul_file ) .and. ( end_jul .gt. end_jul_file )) then
+           idx_st_period = start_jul_file - start_jul + 1  
+           idx_en_period = idx_st_period + length_file     - 1 
+           idx_st_file   = 1
+           idx_en_file   = length_file      
+        end if
 
-      !  |--------------|                            FILE
-      !       |---------------------------------|    PERIOD
-      if (( start_jul .ge. start_jul_file ) .and. ( end_jul .gt. end_jul_file )) then
-         idx_st_period = 1
-         idx_en_period =  end_jul_file     - start_jul + 1  
-         idx_st_file   =  start_jul - start_jul_file   + 1  
-         idx_en_file   = length_file   
-      end if
+        !  |--------------|                            FILE
+        !       |---------------------------------|    PERIOD
+        if (( start_jul .ge. start_jul_file ) .and. ( end_jul .gt. end_jul_file )) then
+           idx_st_period = 1
+           idx_en_period =  end_jul_file     - start_jul + 1  
+           idx_st_file   =  start_jul - start_jul_file   + 1  
+           idx_en_file   = length_file   
+        end if
 
-      !                          |--------------|    FILE
-      !  |---------------------------------|         PERIOD
-      if (( start_jul.lt. start_jul_file ) .and. ( end_jul .le. end_jul_file )) then
-         idx_st_period =  start_jul_file - start_jul + 1  
-         idx_en_period = length_period
-         idx_st_file   = 1
-         idx_en_file   =  end_jul - start_jul_file   + 1 
-      end if
-	  !update global variable when measured data are available
-      gr_data(1, idx_st_period:idx_en_period) = gr_file(idx_st_file: idx_en_file)
-      call append (global_radiation, gr_data, nodata_file)
+        !                          |--------------|    FILE
+        !  |---------------------------------|         PERIOD
+        if (( start_jul.lt. start_jul_file ) .and. ( end_jul .le. end_jul_file )) then
+           idx_st_period =  start_jul_file - start_jul + 1  
+           idx_en_period = length_period
+           idx_st_file   = 1
+           idx_en_file   =  end_jul - start_jul_file   + 1 
+        end if
+	    !update global variable when measured data are available
+        gr_data(1, idx_st_period:idx_en_period) = gr_file(idx_st_file: idx_en_file)
+        call append (global_radiation, gr_data, nodata_file)
 	  
-      deallocate(gr_file)
-      deallocate(gr_mask)
-      deallocate(gr_data)
+        deallocate(gr_file)
+        deallocate(gr_mask)
+        deallocate(gr_data)
+      end if
     end do  !basin loop
     
     !############################################
     !##Riparian zone shading effect coefficient##
 	!############################################
 	!to get the coefficient of riparian zone shading effect: rz_coeff
-    call read_shading_data(nBasins, global_radiation, LAILUT, norlai_daily, nor_globalradi)
+    if (GR_file_exist) then
+      call read_shading_data(nBasins, global_radiation, LAILUT, norlai_daily, nor_globalradi)
+    end if
 			  
   end subroutine wqm_readinputdata
 !-----------------------------
@@ -915,7 +929,7 @@ CONTAINS
          L11_concOUT, L11_interload, L11_concTIN,    & !inout dim2=substances                  
          L11_concMod,                            & !inout 
          L11_aquaticDenitri, L11_aquaticAssimil,  & !
-         L11_rdeniAqtc,L11_rpprodN,L11_rivert_avg10, &
+         L11_rdeniAqtc,L11_ratuptkN, L11_rpprodN,L11_rivert_avg10, &
          L11_rivert_avg20, L11_fLAI, L11_rzcoeff, L11_flight
 
     use mo_mhm_constants,       only: nodata_i4
@@ -1057,8 +1071,8 @@ CONTAINS
 
     !parameters
     call append(L11_rdeniAqtc, dummy_vector )
+    call append(L11_ratuptkN, dummy_vector )
     call append(L11_rpprodN, dummy_vector )
-
     call append(L11_criverbox, dummy_matrix )
     call append(L11_concOUT, dummy_matrix )
     call append(L11_interload, dummy_matrix )
@@ -1152,7 +1166,7 @@ CONTAINS
          L11_concOUT, L11_interload, L11_concTIN,    & !inout dim2=substances                  
          L11_concMod,                            & !inout 
          L11_aquaticDenitri, L11_aquaticAssimil,  & !
-         L11_rdeniAqtc,L11_rpprodN,L11_rivert_avg10, &
+         L11_rdeniAqtc,L11_ratuptkN,L11_rpprodN,L11_rivert_avg10, &
          L11_rivert_avg20, L11_fLAI, L11_rzcoeff, L11_flight
 
     use mo_mhm_constants,  only: P1_InitStateFluxes
@@ -1236,6 +1250,7 @@ CONTAINS
 	
     !parameters
     L11_rdeniAqtc =P1_InitStateFluxes
+    L11_ratuptkN =P1_InitStateFluxes
     L11_rpprodN = P1_InitStateFluxes
 
     L11_criverbox = P1_InitStateFluxes
