@@ -17,8 +17,11 @@ Yang, X., Jomaa, S., Büttner, O., & Rode, M. (2019), Autotrophic nitrate uptake
 ## Steps to run the model ##
 1. Download the mHM (v5.5) hydrological code under the link:https://github.com/mhm-ufz/mhm/releases. 
 2. Download the water quality module code and configuration files from this repository.
-3. Combine those files and replace the original mHM files where needed.
+3. Combine those files and replace the original mHM files where needed*.
 4. Prepare the input data:
    - Follow steps in the mHM manual for hydrological inputs (provided associated with the mHM source code);
    - "Documentation_WQinputs.pdf" for nitrate inputs and initial conditions.
-5. Run the model with "./mhm-nitrate" (or compile again using the "make" command).
+5. Set **processCase(11) = 1** in mhm.nml to activate the nitrate simulation.
+6. Run the model with "./mhm-nitrate" (or compile again using the "make" command).
+
+*Please note that here we provide several code/configuration files of the mHM v5.5 (./src/mHM/* and *.nml). To run the nitrate simulation, these files have to be modified and replaced.   
