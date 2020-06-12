@@ -1,4 +1,6 @@
-## mHM-Nitrate_v2.0 ##
+## mHM-Nitrate_v2.0 ## 
+[![DOI](https://zenodo.org/badge/246350042.svg)](https://zenodo.org/badge/latestdoi/246350042)
+
 **The mHM-Nitrate model** is a fully distributed, flexibly designed nitrate model at catchment scale. The model is developed based on the hydrological platform of mesoscale Hydrological Model (mHM, v5.5) (https://www.ufz.de/mhm). Descriptions of nitrate transport and removal processes are mainly introduced from Hydrological predictions for the Environment (HYPE) (http://www.smhi.net/hype/wiki/doku.php?id=start), with several improvements for a better model representation under changing anthropogenic condtions.
 
 Compared to the first version (https://git.ufz.de/yangx/mHM-Nitrate), this version (**v2.0**) has three main modifications: (1) implemented a new regionalization approach for in-stream autotraphic nitrate uptake (Yang et al., Water Res. 2019); (2) improved the crop growth descriptions for winter crops (i.e., witner crops only take up considerable nutrients after the "emerge date"); and (3) added a new input information (i.e., "geoformation.txt" in ./input/water_quality, specifying the permeability of each geologic unit) for a better representation of initial soil nitrate conditions. Detailed information has been provided in **Documentation_WQinputs.pdf** and has been documented within the source code in specific locations.
@@ -8,7 +10,11 @@ Compared to the first version (https://git.ufz.de/yangx/mHM-Nitrate), this versi
 The presented source code is developed based on the mHM version 5.5. The version based on mHM v5.7 is also available under request to the author Xiaoqiang Yang (xiaoqiang.yang@ufz.de) and Michael Rode (michael.rode@ufz.de).
 
 ## Citations ##
-Please also refer to the following publications:
+Please refer to the source code as:
+
+Yang, X., & Rode, M. (2020), A Fully Distributed Catchment Nitrate Model - mHM-Nitrate v2.0. Zenodo. https://doi.org/10.5281/zenodo.3891629
+
+Please also refer to the following associated publications:
 
 Yang, X., Jomaa, S., Zink, M., Fleckenstein, J. H., Borchardt, D., & Rode, M. (2018), A new fully distributed model of nitrate transport and removal at catchment scale, Water Resources Research, 54(8), 5856-5877. https://doi.org/10.1029/2017WR022380.
 
