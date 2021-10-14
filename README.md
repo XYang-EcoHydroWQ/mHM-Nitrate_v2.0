@@ -33,4 +33,4 @@ Yang, X., Jomaa, S., Büttner, O., & Rode, M. (2019), Autotrophic nitrate uptake
 ## Bug report ##
 **2021-10-14** : 
   - mo_water_quality.f90::instream_nutrient_processes (line 868): the unit transform constant in should be *1.0E-6*;
-  - mo_water_quality.f90::wqm (line 363): the land cover id should be *LAIUnitList(i)* in the LAI_class.asc map, instead of *i*.
+  - mo_water_quality.f90::wqm (line 363): the land use id should be *LAIUnitList(i)* in the LAI_class.asc map, instead of *i*.
