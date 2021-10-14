@@ -179,7 +179,8 @@ CONTAINS
 
   subroutine rz_shading_coeff(i, noday, nor_gr, rz_coeff_i)
 
-  use mo_wqm_global_variables,   only: norlai_daily, L11_fLAI,LAIIDlist
+  use mo_wqm_global_variables,   only: norlai_daily, L11_fLAI
+
   implicit none
   integer(i4),            intent(in)    :: i             !reach id 
   integer(i4),            intent(in)    :: noday
@@ -193,7 +194,7 @@ CONTAINS
   !lai_coe = sum(norlai_daily(:, noday)* L11_fLAI(i,:), )
   lai_coe = 0.0_dp
   do nn =1, size(norlai_daily, 1)
-     lai_coe = lai_coe + norlai_daily(nn,noday)* L11_fLAI(i, LAIIDlist(nn))
+     lai_coe = lai_coe + norlai_daily(nn,noday)* L11_fLAI(i, nn)
   end do
   !
 !  if (sum(L11_fLAI(i,:) ) > 1 ) then

@@ -201,7 +201,7 @@ CONTAINS
       nLink_rzcoeff,     & ! riparian zone shading coefficient 
       nLink_flight)      ! moving averaged shading coefficient
 		  
-    use mo_global_variables,     only: nLAIclass, nSoilTypes,nGeoUnits, &  ! number of LAI types (land use types)/soil type/Geounits
+    use mo_global_variables,     only: nLAIclass,LAIUnitList, nSoilTypes,nGeoUnits, &  ! number of LAI types (land use types)/soil type/Geounits
                                        GeoUnitList
     use mo_wqm_global_variables, only: rotation,year_start, day_preyr   ! simulation starting year		 
     use mo_julian,               only: ndays, dec2date
@@ -360,7 +360,7 @@ CONTAINS
       !currently, regionalisation of nitrate parameters has not developed yet,
       !thus fraction of LAI type must be calculated for those land-use dependent parameters
        do i=1, nLAIclass
-          fLAI(:,i) = L0_fractionalCover_in_Lx( int(L0_LCover_LAI), i, mask0, &
+          fLAI(:,i) = L0_fractionalCover_in_Lx( int(L0_LCover_LAI), LAIUnitList(i), mask0, &
                                                L0upBound_inL1,    &
                                                L0downBound_inL1,  &
                                                L0leftBound_inL1,  &
@@ -370,7 +370,7 @@ CONTAINS
       !new implementation for crop rotation
       !here, rotation type map is modified from land use map due to technical simplification
        do i=1, nCroptation
-          frotation(:,i) = L0_fractionalCover_in_Lx( int(L0_cover_rotation), rotation(iBasin)%id(i), mask0, &
+          frotation(:,i) = L0_fractionalCover_in_Lx( int(L0_cover_rotation),rotation(iBasin)%id(i) , mask0, &
                                                L0upBound_inL1,    &
                                                L0downBound_inL1,  &
                                                L0leftBound_inL1,  &
@@ -1504,7 +1504,7 @@ CONTAINS
   real(dp),dimension(2,2)   :: frtman_nadd, res_nadd   ! amount of sources added to nitrogen pools [kg/km^2 or mg/m^2]
   integer(i4)       :: j, num_crp
   real(dp)          :: DT  !number of steps in one day
-  integer(i4)       :: ir,idxr,jc, jc_prev, jc_next    !rotation index/crop index in a specific rotation
+  integer(i4)       :: ir,jc, jc_prev, jc_next    !rotation index/crop index in a specific rotation
   integer(i4)       :: remidr, remidr_prev, remidr_next    !reminder after mod function to identify cropid in a rotation
   real(dp)          :: uptk_help, uptake_N, rf1  
   real(dp)          :: f_temp              ! temperature factor of soil uptake
@@ -1516,8 +1516,7 @@ CONTAINS
   potential_uptake = 0.0_dp
 
   do ir = 1, nCroptation
-     idxr= rotation%id(ir)
-     if (frac_rotation(idxr) > 0.0_dp ) then 
+     if (frac_rotation(ir) > 0.0_dp ) then 
         ! abbreviation of crop rotation variables
         num_crp = rotation(iBasin)%ncrops(ir)
         ! identify correct crop in specific year
@@ -1534,64 +1533,64 @@ CONTAINS
         ! fertiliser application
         if ((noday >= cropdata(jc)%frtday1 .and. noday < cropdata(jc)%frtday1 + cropdata(jc)%frtperiod) .or. &
             (noday < (cropdata(jc_prev)%frtday1 + cropdata(jc_prev)%frtperiod - days_prev))) then
-        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%frtn1 * (1.0 - cropdata(jc)%frtdown1) &
+        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%frtn1 * (1.0 - cropdata(jc)%frtdown1) &
                                             / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%frtn1 * cropdata(jc)%frtdown1  &
+        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%frtn1 * cropdata(jc)%frtdown1  &
                                             / (cropdata(jc)%frtperiod * DT)
         end if
         !in case fert applied twice a year
         if (cropdata(jc)%frtday2 .ne. 0_i4) then
         if (noday >= cropdata(jc)%frtday2 .and. noday < (cropdata(jc)%frtday2 + cropdata(jc)%frtperiod)) then
-        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%frtn2 * (1.0 - cropdata(jc)%frtdown2) &
+        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%frtn2 * (1.0 - cropdata(jc)%frtdown2) &
                                             / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%frtn2 * cropdata(jc)%frtdown2  &
+        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%frtn2 * cropdata(jc)%frtdown2  &
                                             / (cropdata(jc)%frtperiod * DT)
         end if
         end if
         !in case fert applied twice in previous year and the second application period across the calendar year
         if (cropdata(jc_prev)%frtday2 .ne. 0_i4) then
         if (noday < (cropdata(jc_prev)%frtday2 + cropdata(jc_prev)%frtperiod - days_prev)) then
-        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%frtn2 * (1.0 - cropdata(jc)%frtdown2) &
+        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%frtn2 * (1.0 - cropdata(jc)%frtdown2) &
                                             / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%frtn2 * cropdata(jc)%frtdown2  &
+        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%frtn2 * cropdata(jc)%frtdown2  &
                                             / (cropdata(jc)%frtperiod * DT)
         end if
         end if
 		!manure application
         if ((noday >= cropdata(jc)%manday1 .and. noday < cropdata(jc)%manday1 + cropdata(jc)%frtperiod) .or. &
             (noday < (cropdata(jc_prev)%manday1 + cropdata(jc_prev)%frtperiod - days_prev))) then
-        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%mann1 * (1.0 - cropdata(jc)%mandown1) &
+        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%mann1 * (1.0 - cropdata(jc)%mandown1) &
                                             * cropdata(jc)%manfIN / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%mann1 * cropdata(jc)%mandown1  &
+        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%mann1 * cropdata(jc)%mandown1  &
                                             * cropdata(jc)%manfIN / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(1,2) = frtman_nadd(1,2) + frac_rotation(idxr) * cropdata(jc)%mann1 * (1.0 - cropdata(jc)%mandown1) &
+        frtman_nadd(1,2) = frtman_nadd(1,2) + frac_rotation(ir) * cropdata(jc)%mann1 * (1.0 - cropdata(jc)%mandown1) &
                                             * (1.0 - cropdata(jc)%manfIN) / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,2) = frtman_nadd(2,2) + frac_rotation(idxr) * cropdata(jc)%mann1 * cropdata(jc)%mandown1  &
+        frtman_nadd(2,2) = frtman_nadd(2,2) + frac_rotation(ir) * cropdata(jc)%mann1 * cropdata(jc)%mandown1  &
                                             * (1.0 - cropdata(jc)%manfIN) / (cropdata(jc)%frtperiod * DT)
         end if
 		!in case manure applied two times a year
         if (cropdata(jc)%manday2 .ne. 0_i4) then
         if (noday >= cropdata(jc)%manday2 .and. noday < (cropdata(jc)%manday2 + cropdata(jc)%frtperiod)) then
-        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
+        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
                                             * cropdata(jc)%manfIN / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
+        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
                                             * cropdata(jc)%manfIN / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(1,2) = frtman_nadd(1,2) + frac_rotation(idxr) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
+        frtman_nadd(1,2) = frtman_nadd(1,2) + frac_rotation(ir) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
                                             * (1.0 - cropdata(jc)%manfIN) / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,2) = frtman_nadd(2,2) + frac_rotation(idxr) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
+        frtman_nadd(2,2) = frtman_nadd(2,2) + frac_rotation(ir) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
                                             * (1.0 - cropdata(jc)%manfIN) / (cropdata(jc)%frtperiod * DT)
         end if
         end if
         !in case manure applied twice in previous year and the second application period across the calendar year	
         if (cropdata(jc_prev)%manday2 .ne. 0_i4) then
         if (noday < (cropdata(jc_prev)%manday2 + cropdata(jc_prev)%frtperiod - days_prev))  then
-        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
+        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
                                             * cropdata(jc)%manfIN / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
+        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
                                             * cropdata(jc)%manfIN / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(1,2) = frtman_nadd(1,2) + frac_rotation(idxr) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
+        frtman_nadd(1,2) = frtman_nadd(1,2) + frac_rotation(ir) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
                                             * (1.0 - cropdata(jc)%manfIN) / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,2) = frtman_nadd(2,2) + frac_rotation(idxr) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
+        frtman_nadd(2,2) = frtman_nadd(2,2) + frac_rotation(ir) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
                                             * (1.0 - cropdata(jc)%manfIN) / (cropdata(jc)%frtperiod * DT)
         end if
         end if
@@ -1599,13 +1598,13 @@ CONTAINS
         if (cropdata(jc)%resday == 0_i4) cropdata(jc)%resperiod = 365_i4
         if ((noday >= cropdata(jc)%resday .and. noday < cropdata(jc)%resday + cropdata(jc)%resperiod) .or. &
             (noday < (cropdata(jc_prev)%resday + cropdata(jc_prev)%resperiod - days_prev))) then
-        res_nadd(1,1) = res_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%resn * (1.0 - cropdata(jc)%resdown) &
+        res_nadd(1,1) = res_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%resn * (1.0 - cropdata(jc)%resdown) &
                                       * cropdata(jc)%resfast / (cropdata(jc)%resperiod * DT)
-        res_nadd(1,2) = res_nadd(1,2) + frac_rotation(idxr) * cropdata(jc)%resn * (1.0 - cropdata(jc)%resdown) &
+        res_nadd(1,2) = res_nadd(1,2) + frac_rotation(ir) * cropdata(jc)%resn * (1.0 - cropdata(jc)%resdown) &
                                       * (1.0 - cropdata(jc)%resfast) / (cropdata(jc)%resperiod * DT)
-        res_nadd(2,1) = res_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%resn *  cropdata(jc)%resdown &
+        res_nadd(2,1) = res_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%resn *  cropdata(jc)%resdown &
                                       * cropdata(jc)%resfast / (cropdata(jc)%resperiod * DT)
-        res_nadd(2,2) = res_nadd(2,2) + frac_rotation(idxr) * cropdata(jc)%resn *  cropdata(jc)%resdown &
+        res_nadd(2,2) = res_nadd(2,2) + frac_rotation(ir) * cropdata(jc)%resn *  cropdata(jc)%resdown &
                                       * (1.0 - cropdata(jc)%resfast) / (cropdata(jc)%resperiod * DT)
         end if
 		
@@ -1668,11 +1667,11 @@ CONTAINS
         !upper two layers based on root fraction
         rf1 = fracRoots(1)/(fracRoots(1) +fracRoots(2))
 		
-        potential_uptake(1) =potential_uptake(1)+frac_rotation(idxr)*uptake_N* cropdata(jc)%uppsoil* rf1
-        potential_uptake(2) =potential_uptake(2) + frac_rotation(idxr) * uptake_N * cropdata(jc)%uppsoil*(1-rf1)
+        potential_uptake(1) =potential_uptake(1)+frac_rotation(ir)*uptake_N* cropdata(jc)%uppsoil* rf1
+        potential_uptake(2) =potential_uptake(2) + frac_rotation(ir) * uptake_N * cropdata(jc)%uppsoil*(1-rf1)
         !yangx 2021-08 allowing N uptake occurs in all three layers, in accordance to root fractions
         ! added layer 3		
-        potential_uptake(3) =potential_uptake(3) + frac_rotation(idxr) * uptake_N * (1-cropdata(jc)%uppsoil)!(1.0 - cropdata(jc)%uppsoil)
+        potential_uptake(3) =potential_uptake(3) + frac_rotation(ir) * uptake_N * (1-cropdata(jc)%uppsoil)!(1.0 - cropdata(jc)%uppsoil)
 		
      end if  !end of (if frac_rotation>0)
   end do     !end of rotation loop
