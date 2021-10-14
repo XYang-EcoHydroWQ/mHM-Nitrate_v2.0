@@ -33,5 +33,4 @@ Yang, X., Jomaa, S., Büttner, O., & Rode, M. (2019), Autotrophic nitrate uptake
 ## Bug report ##
 **2021-10-14** : 
   - mo_water_quality.f90::instream_nutrient_processes (line 868): the unit transform constant in should be *1.0E-6*;
-  - mo_water_quality.f90::agri_management: a new idex *idxr* is introduced to link the rotation sequeue ids to the rotation type ids from the rotation map (rotation_class.asc);
-  - mo_wqm_shadingeffect.f90::rz_shading_coeff (line196): LAIIDList is used to link the LAI look-up-table ids to land use (LAI) map (LAI_class.asc).
+  - mo_water_quality.f90::wqm (line 363): the land cover id should be *LAIUnitList(i)* in the LAI_class.asc map, instead of *i*.
