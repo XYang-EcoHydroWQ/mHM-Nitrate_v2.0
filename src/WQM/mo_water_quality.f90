@@ -1,24 +1,3 @@
-! The model, entitled mHM-Nitrate model v2.0, is a fully distributed nitrate 
-! transport and removal model. Please refer to "README.md" for more instructions   	
-
-! Copyright (C) 2020,
-! Xiaoqiang Yang and Michael Rode
-! Helmholtz Centre for Environmental Research - UFZ.
-! All rights reserved.
-
-! This program is free software: you can redistribute it and/or modify
-! it under the terms of the GNU General Public License as published by
-! the Free Software Foundation, either version 3 of the License, or
-! (at your option) any later version.
-
-! This program is distributed in the hope that it will be useful,
-! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-! GNU General Public License for more details.
-
-! You should have received a copy of the GNU General Public License
-! along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 !> \file mo_water_quality.f90
 
 !> \brief All main processes of water quality model.
@@ -30,7 +9,7 @@
 !>          process (8) should be turned on beforehand.
 
 !> \authors Xiaoqiang Yang
-!> \date Apr 2018
+!> \date Apr 2018 
 
 MODULE mo_water_quality
 
@@ -117,6 +96,7 @@ CONTAINS
       temp,              & ! air temperature(***should be adjusted to day-night corrected value***)
       !soil moisture
       fsealed,           & ! fraction of sealed area
+      fRoots,            & ! root fraction of each soil layer
       sealedStorage,     & ! sealed water storage
       runoff_sealed,     & ! direct runoff
       infiltration,      & ! infiltration for each soil layer
@@ -258,6 +238,7 @@ CONTAINS
     real(dp), dimension(:),      intent(in) :: prec_effect
     real(dp), dimension(:),      intent(in) :: temp
     real(dp), dimension(:),      intent(in) :: fsealed
+    real(dp), dimension(:,:),    intent(in) :: fRoots
     real(dp), dimension(:),      intent(in) :: sealedStorage
     real(dp), dimension(:),      intent(in) :: runoff_sealed
     real(dp), dimension(:,:),    intent(in) :: infiltration
@@ -363,8 +344,9 @@ CONTAINS
     real(dp), dimension(:),        intent(inout):: nLink_flight
 
     !local
-    real(dp), dimension(2)     :: potential_uptake !nitrate potential plant uptake amount in soil phase,
+    real(dp), dimension(3)     :: potential_uptake !nitrate potential plant uptake amount in soil phase,
                                                      !  dim1=soillyrs, dim1=1(N)
+                                                   !yangx 2021-08 changed from "dimension(2)" to "dimension(3)" according to line 1668
     integer(i4)        :: k,i !L1 cells loop index
     !real(dp)           :: temp_reach   !river temperature at L1 
     integer(i4)        :: year,month,day,hour !date of current timestep
@@ -395,6 +377,12 @@ CONTAINS
                                                L0rightBound_inL1, &
                                                nTCells0_inL1)
        end do
+       ! write(23,*) fRoots(130,:)
+       ! write(23,*) fRoots(117,:)
+       ! write(23,*) fRoots(421,:)
+       ! write(23,*) frotation(:,7)
+       ! write(23,*) rotation(iBasin)%id(8)
+       ! write(23,*) frotation(:,8)
       !new implementation for geounit
 
        do i=1, nGeoUnits
@@ -422,6 +410,12 @@ CONTAINS
 	   !the overall percentage of sand, clay and the bulk density of each grid at Level 1
        !this information is currently coded as local variable, can be added as global variable if needed
        call L1_soiltexture(fsoil)
+       ! write(24,*) fsoil(:,36)+fsoil(:,37)+fsoil(:,40)+fsoil(:,42)+fsoil(:,6)
+       ! write(24,*) fsoil(:,71)
+       ! write(24,*) fsoil(:,55)+fsoil(:,59)
+
+       ! write(23,*) fLAI(:,9)
+
        !#############################################
 	   
        !nitrate parameters upscaling
@@ -503,7 +497,8 @@ CONTAINS
        !AND potential plant uptake (potential_uptake)
       
        call agri_management(timeStep, iBasin, no_day, no_year, day_preyr,frotation(k,:), soilMoisture(k,:), &
-         csoilMoist(k,:,:), fastN(k,:), humusN(k,:), temp(k), potential_uptake, nCroptation,infrtmanapp(k))       
+         csoilMoist(k,:,:), fastN(k,:), humusN(k,:), temp(k), fRoots(k,:), &
+         potential_uptake, nCroptation,infrtmanapp(k))       
 	   
        !update dissolved ON and IN pools		  
        dissIN(k,:) = soilMoisture(k,:) * csoilMoist(k,:,1)
@@ -536,7 +531,7 @@ CONTAINS
        InflowHeadwater, InflowNodeList,InflowIndexList,  Qinflow, cqInflow, nLink_rivertemp, nNode_concOUT )
 
     !in-stream processes
-    call conc_routing_process(nNodes, nNodes-1 ,no_day, timeStep, nPerm, nLink_from, nLink_to, nLink_length, &
+    call conc_routing_process(tt,nNodes, nNodes-1 ,no_day, timeStep, nPerm, nLink_from, nLink_to, nLink_length, &
        nNode_qOUT,nNode_qTR, nNode_concOUT,nNode_interload,nNode_concTIN,nLink_riverbox, nLink_criverbox,nLink_yravg_q,&
        nLink_rivertemp,nNode_concMod, aquatic_denitri, aquatic_assimil, adenitr_rate, atruptk_rate,priprod_rate, &
        globalradi_nor, nLink_rzcoeff, nLink_flight)
@@ -615,7 +610,7 @@ CONTAINS
   !     HISTORY
   !>        \author Xiaoqiang Yang
   !>        \date Sep 2016
-  subroutine conc_routing_process(nNodes, nLinks, no_day, TS, nPerm, nLink_from, nLink_to, nLink_length,  &
+  subroutine conc_routing_process(tt,nNodes, nLinks, no_day, TS, nPerm, nLink_from, nLink_to, nLink_length,  &
        nNode_qOUT, nNode_qTR, nNode_concOUT, nNode_interload, nNode_concTIN, nLink_riverbox, nLink_criverbox, nLink_yravg_q, &
        rivertemp11, nNode_concMod, aquatic_denitri, aquatic_assimil,pardeniratew, parautouptkrate, parprodrate, &
        nor_gr,rz_coeff, f_light)
@@ -624,6 +619,7 @@ CONTAINS
   
   implicit none
 
+  integer(i4),                     intent(in)    :: tt
   integer(i4),                     intent(in)    :: nNodes
   integer(i4),                     intent(in)    :: nLinks
   integer(i4),                     intent(in)    :: no_day     !number of day accounter in current year
@@ -665,7 +661,7 @@ CONTAINS
   real(dp)                :: newbox
   integer(i4)             :: iNode, tNode
 
-  
+
   temp_qTIN = 0.0_dp
   nNode_interload = 0.0_dp
   !constant parameter  
@@ -702,7 +698,7 @@ CONTAINS
      call instream_nutrient_processes(TS,no_day,i, rivertemp11(i), L11_rivert_avg10(i), L11_rivert_avg20(i), &
          benthic_area, depth, nLink_riverbox(i), nLink_criverbox(i,:),aquatic_denitri(i), aquatic_assimil(i), &
         pardeniratew(i),parautouptkrate(i), parprodrate(i), nor_gr, rz_coeff(i), f_light(i))
-
+         
      !update water volumn of reach(link) 
      nLink_riverbox(i) = nLink_riverbox(i) - nNode_qTR(iNode) * sec_TS
      !calculate the load from each upstream reach and store as input of the to_node (tNode) 
@@ -711,6 +707,7 @@ CONTAINS
      temp_qTIN(tNode) = temp_qTIN(tNode) + nNode_qTR(iNode)
 
   end do
+
   !*************************************
   !accumulate at the outlet of catchment
   !*************************************
@@ -811,10 +808,10 @@ CONTAINS
   real(dp),                       intent(inout)  :: rz_coeff ! coefficient for each reach
   real(dp),                       intent(inout)  :: f_light  ! 5 days' moving average of rz_coeff
 
-
   !local
   real(dp)                 :: INpool, ONpool, tp_ave,aqassimil0
   real(dp)                 :: f_temp, f_conc, f_tp, f_temp1, f_temp2
+  real(dp)                 :: f_tempm, f_netall
   real(dp)              :: DT
   
   !HYPE parameter
@@ -846,6 +843,17 @@ CONTAINS
     criverbox(1) = 0.0_dp
   end if
   !primary production and mineralisation (inverse processes)
+  ! for temperature effects on mineralisation
+  if (rivertemp11 > 0.0_dp) then
+     f_temp1 = rivertemp11 /20.0_dp
+  else
+     f_temp1 = 0.0_dp
+  end if  
+  f_temp2 = (rt_avg10 - rt_avg20) / 5.0_dp
+  !the final empirical temperature effect, the same as HYPE implementation
+  f_tempm = f_temp1 * f_temp2
+  !get the updated stream ON pool
+  ONpool = riverbox * criverbox(2) /1000.0_dp 
   if (GR_file_exist) then
     !##############################################
     !##new method considering light availability ##
@@ -855,29 +863,34 @@ CONTAINS
 
     aqassimil =0.0_dp
     aqassimil0 = 0.0_dp
+    
     if (rivertemp11 >= 0.0_dp) then
-       aqassimil0 =  parautouptkrate* f_light * activedepth * benthic_area * 10E-6 /DT   ![kg]
+       aqassimil0 =  parautouptkrate* f_light * activedepth * benthic_area * 1.0E-6 /DT   ![kg]
 	   ! here the parautouptkrate (potential N autotrophic uptake = 300 mg N m-2 d-1) 
-       aqassimil0 = min(0.9_dp *INpool*activedepth, aqassimil0 )  
-       !mineralization (respiration) assumed part of autotrophic assimilation
-       aqassimil = parprodrate*aqassimil0
-       !aqassimil = min(maxprodwater*INpool*activedepth, aqassimil )
+       aqassimil0 = min(0.9_dp *INpool*activedepth, aqassimil0 ) 
+       !net uptake via primary production	   
+       !ca. 50% gross uptake will be returned via respiration controlled by a parameter and
+       !additional temperature effect (f_tempm approx. in [-0.2,0.4]) is taken from original HYPE method
+       f_netall = parprodrate*f_tempm
+       if (f_netall > 0.0_dp) then
+          if (f_netall >= 1.0_dp) f_netall = 1.0_dp !to ensure the overall coeff <= 1.0
+          aqassimil = f_netall*aqassimil0
+          aqassimil = min(maxprodwater*INpool*activedepth, aqassimil)
+       else
+          if (f_netall <= -1.0_dp) f_netall = -1.0_dp
+          aqassimil = f_netall*aqassimil0
+          aqassimil = max(-maxprodwater*ONpool*activedepth, aqassimil)
+       end if
+       ! !mineralization (respiration) assumed part of autotrophic assimilation
+       ! aqassimil = parprodrate*aqassimil0
     end if
   else
     !##method from HYPE##    
     tp_ave = tpmean   ! since phorsphose is not implemented at the monment..
     f_tp = tp_ave / (tp_ave + halfsatIPwater)
-    ONpool = riverbox * criverbox(2) /1000.0_dp
-    if (rivertemp11 > 0.0_dp) then
-       f_temp1 = rivertemp11 /20.0_dp
-    else
-       f_temp1 = 0.0_dp
-    end if  
-    f_temp2 = (rt_avg10 - rt_avg20) / 5.0_dp  
-    f_temp = f_temp1 * f_temp2
     aqassimil =0.0_dp
     if (rivertemp11 >= 0.0_dp) then
-       aqassimil = parprodrate * f_temp * f_tp * activedepth * depth * benthic_area/ DT !
+       aqassimil = parprodrate * f_tempm * f_tp * activedepth * depth * benthic_area/ DT !
        if (aqassimil > 0.0_dp) then
           aqassimil = min(maxprodwater*INpool*activedepth, aqassimil ) 
        else
@@ -899,7 +912,7 @@ CONTAINS
   end if 
   
   !!for writing out pure assimiloray uptake
-  !aqassimil = aqassimil0
+  !aqassimil = aqassimil0*f_tempm
    
 
 
@@ -1309,7 +1322,7 @@ CONTAINS
   end do
   
   soildenitri = sum(lyr_deni(:) )
-
+  
     
   end subroutine soil_denitrification
   !--------------------------------------------------------------------
@@ -1373,11 +1386,12 @@ CONTAINS
   real(dp),                       intent(out)    :: soiluptkN
   !local
   integer(i4)         :: j
-  real(dp), dimension(2)    :: max_uptk, lyr_uptk
-  real(dp), dimension(2)    :: diss_INt
-  !only happens in upper two layers
+  real(dp), dimension(3)    :: max_uptk, lyr_uptk
+  real(dp), dimension(3)    :: diss_INt
+  !hype originally only happens in upper two layers
+  !yangx 2021-08 allowed three layers
 
-  do j = 1, 2
+  do j = 1, 3 
      if (soilmoist(j) > 0.0001_dp) then
      diss_INt(j) = soilmoist(j) * concsoil(j,1)
      !in case max_uptk less than zero
@@ -1400,6 +1414,7 @@ CONTAINS
   end do  
 	 
   soiluptkN = sum(lyr_uptk(:))
+
 
   end subroutine soil_plant_uptake
 
@@ -1465,7 +1480,7 @@ CONTAINS
   !>        X. Yang Aug 2019 modified potential crop uptake calculation
   
   subroutine agri_management(TS, iBasin, noday, noyear, days_prev, frac_rotation, soilmoist, concsoil, &
-       fast_N, humus_N, temp, potential_uptake, nCroptation,infrtmanapp)
+       fast_N, humus_N, temp, fracRoots, potential_uptake, nCroptation,infrtmanapp)
   
   use mo_wqm_global_variables,   only: &
        cropdata, rotation              !&
@@ -1477,6 +1492,7 @@ CONTAINS
   real(dp), dimension(:),    intent(in)    :: frac_rotation
   real(dp), dimension(:),    intent(in)    :: soilmoist
   real(dp),                  intent(in)    :: temp                            !temperature
+  real(dp), dimension(:),    intent(in)    :: fracRoots  !root fraction of each soil layer, introduced in AET calc
   real(dp), dimension(:,:),  intent(inout) :: concsoil
   real(dp), dimension(:),    intent(inout) :: fast_N, humus_N                 ![mg/m^2]
   real(dp), dimension(:),    intent(inout) :: potential_uptake  
@@ -1488,9 +1504,9 @@ CONTAINS
   real(dp),dimension(2,2)   :: frtman_nadd, res_nadd   ! amount of sources added to nitrogen pools [kg/km^2 or mg/m^2]
   integer(i4)       :: j, num_crp
   real(dp)          :: DT  !number of steps in one day
-  integer(i4)       :: ir,jc, jc_prev, jc_next    !rotation index/crop index in a specific rotation
+  integer(i4)       :: ir,idxr,jc, jc_prev, jc_next    !rotation index/crop index in a specific rotation
   integer(i4)       :: remidr, remidr_prev, remidr_next    !reminder after mod function to identify cropid in a rotation
-  real(dp)          :: uptk_help, uptake_N  
+  real(dp)          :: uptk_help, uptake_N, rf1  
   real(dp)          :: f_temp              ! temperature factor of soil uptake
 
   
@@ -1500,7 +1516,8 @@ CONTAINS
   potential_uptake = 0.0_dp
 
   do ir = 1, nCroptation
-     if (frac_rotation(ir) > 0.0_dp ) then 
+     idxr= rotation%id(ir)
+     if (frac_rotation(idxr) > 0.0_dp ) then 
         ! abbreviation of crop rotation variables
         num_crp = rotation(iBasin)%ncrops(ir)
         ! identify correct crop in specific year
@@ -1517,64 +1534,64 @@ CONTAINS
         ! fertiliser application
         if ((noday >= cropdata(jc)%frtday1 .and. noday < cropdata(jc)%frtday1 + cropdata(jc)%frtperiod) .or. &
             (noday < (cropdata(jc_prev)%frtday1 + cropdata(jc_prev)%frtperiod - days_prev))) then
-        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%frtn1 * (1.0 - cropdata(jc)%frtdown1) &
+        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%frtn1 * (1.0 - cropdata(jc)%frtdown1) &
                                             / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%frtn1 * cropdata(jc)%frtdown1  &
+        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%frtn1 * cropdata(jc)%frtdown1  &
                                             / (cropdata(jc)%frtperiod * DT)
         end if
         !in case fert applied twice a year
         if (cropdata(jc)%frtday2 .ne. 0_i4) then
         if (noday >= cropdata(jc)%frtday2 .and. noday < (cropdata(jc)%frtday2 + cropdata(jc)%frtperiod)) then
-        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%frtn2 * (1.0 - cropdata(jc)%frtdown2) &
+        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%frtn2 * (1.0 - cropdata(jc)%frtdown2) &
                                             / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%frtn2 * cropdata(jc)%frtdown2  &
+        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%frtn2 * cropdata(jc)%frtdown2  &
                                             / (cropdata(jc)%frtperiod * DT)
         end if
         end if
         !in case fert applied twice in previous year and the second application period across the calendar year
         if (cropdata(jc_prev)%frtday2 .ne. 0_i4) then
         if (noday < (cropdata(jc_prev)%frtday2 + cropdata(jc_prev)%frtperiod - days_prev)) then
-        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%frtn2 * (1.0 - cropdata(jc)%frtdown2) &
+        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%frtn2 * (1.0 - cropdata(jc)%frtdown2) &
                                             / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%frtn2 * cropdata(jc)%frtdown2  &
+        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%frtn2 * cropdata(jc)%frtdown2  &
                                             / (cropdata(jc)%frtperiod * DT)
         end if
         end if
 		!manure application
         if ((noday >= cropdata(jc)%manday1 .and. noday < cropdata(jc)%manday1 + cropdata(jc)%frtperiod) .or. &
             (noday < (cropdata(jc_prev)%manday1 + cropdata(jc_prev)%frtperiod - days_prev))) then
-        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%mann1 * (1.0 - cropdata(jc)%mandown1) &
+        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%mann1 * (1.0 - cropdata(jc)%mandown1) &
                                             * cropdata(jc)%manfIN / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%mann1 * cropdata(jc)%mandown1  &
+        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%mann1 * cropdata(jc)%mandown1  &
                                             * cropdata(jc)%manfIN / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(1,2) = frtman_nadd(1,2) + frac_rotation(ir) * cropdata(jc)%mann1 * (1.0 - cropdata(jc)%mandown1) &
+        frtman_nadd(1,2) = frtman_nadd(1,2) + frac_rotation(idxr) * cropdata(jc)%mann1 * (1.0 - cropdata(jc)%mandown1) &
                                             * (1.0 - cropdata(jc)%manfIN) / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,2) = frtman_nadd(2,2) + frac_rotation(ir) * cropdata(jc)%mann1 * cropdata(jc)%mandown1  &
+        frtman_nadd(2,2) = frtman_nadd(2,2) + frac_rotation(idxr) * cropdata(jc)%mann1 * cropdata(jc)%mandown1  &
                                             * (1.0 - cropdata(jc)%manfIN) / (cropdata(jc)%frtperiod * DT)
         end if
 		!in case manure applied two times a year
         if (cropdata(jc)%manday2 .ne. 0_i4) then
         if (noday >= cropdata(jc)%manday2 .and. noday < (cropdata(jc)%manday2 + cropdata(jc)%frtperiod)) then
-        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
+        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
                                             * cropdata(jc)%manfIN / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
+        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
                                             * cropdata(jc)%manfIN / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(1,2) = frtman_nadd(1,2) + frac_rotation(ir) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
+        frtman_nadd(1,2) = frtman_nadd(1,2) + frac_rotation(idxr) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
                                             * (1.0 - cropdata(jc)%manfIN) / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,2) = frtman_nadd(2,2) + frac_rotation(ir) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
+        frtman_nadd(2,2) = frtman_nadd(2,2) + frac_rotation(idxr) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
                                             * (1.0 - cropdata(jc)%manfIN) / (cropdata(jc)%frtperiod * DT)
         end if
         end if
         !in case manure applied twice in previous year and the second application period across the calendar year	
         if (cropdata(jc_prev)%manday2 .ne. 0_i4) then
         if (noday < (cropdata(jc_prev)%manday2 + cropdata(jc_prev)%frtperiod - days_prev))  then
-        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
+        frtman_nadd(1,1) = frtman_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
                                             * cropdata(jc)%manfIN / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
+        frtman_nadd(2,1) = frtman_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
                                             * cropdata(jc)%manfIN / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(1,2) = frtman_nadd(1,2) + frac_rotation(ir) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
+        frtman_nadd(1,2) = frtman_nadd(1,2) + frac_rotation(idxr) * cropdata(jc)%mann2 * (1.0 - cropdata(jc)%mandown2) &
                                             * (1.0 - cropdata(jc)%manfIN) / (cropdata(jc)%frtperiod * DT)
-        frtman_nadd(2,2) = frtman_nadd(2,2) + frac_rotation(ir) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
+        frtman_nadd(2,2) = frtman_nadd(2,2) + frac_rotation(idxr) * cropdata(jc)%mann2 * cropdata(jc)%mandown2  &
                                             * (1.0 - cropdata(jc)%manfIN) / (cropdata(jc)%frtperiod * DT)
         end if
         end if
@@ -1582,13 +1599,13 @@ CONTAINS
         if (cropdata(jc)%resday == 0_i4) cropdata(jc)%resperiod = 365_i4
         if ((noday >= cropdata(jc)%resday .and. noday < cropdata(jc)%resday + cropdata(jc)%resperiod) .or. &
             (noday < (cropdata(jc_prev)%resday + cropdata(jc_prev)%resperiod - days_prev))) then
-        res_nadd(1,1) = res_nadd(1,1) + frac_rotation(ir) * cropdata(jc)%resn * (1.0 - cropdata(jc)%resdown) &
+        res_nadd(1,1) = res_nadd(1,1) + frac_rotation(idxr) * cropdata(jc)%resn * (1.0 - cropdata(jc)%resdown) &
                                       * cropdata(jc)%resfast / (cropdata(jc)%resperiod * DT)
-        res_nadd(1,2) = res_nadd(1,2) + frac_rotation(ir) * cropdata(jc)%resn * (1.0 - cropdata(jc)%resdown) &
+        res_nadd(1,2) = res_nadd(1,2) + frac_rotation(idxr) * cropdata(jc)%resn * (1.0 - cropdata(jc)%resdown) &
                                       * (1.0 - cropdata(jc)%resfast) / (cropdata(jc)%resperiod * DT)
-        res_nadd(2,1) = res_nadd(2,1) + frac_rotation(ir) * cropdata(jc)%resn *  cropdata(jc)%resdown &
+        res_nadd(2,1) = res_nadd(2,1) + frac_rotation(idxr) * cropdata(jc)%resn *  cropdata(jc)%resdown &
                                       * cropdata(jc)%resfast / (cropdata(jc)%resperiod * DT)
-        res_nadd(2,2) = res_nadd(2,2) + frac_rotation(ir) * cropdata(jc)%resn *  cropdata(jc)%resdown &
+        res_nadd(2,2) = res_nadd(2,2) + frac_rotation(idxr) * cropdata(jc)%resn *  cropdata(jc)%resdown &
                                       * (1.0 - cropdata(jc)%resfast) / (cropdata(jc)%resperiod * DT)
         end if
 		
@@ -1596,6 +1613,7 @@ CONTAINS
 
 		!*************	 
         !calculate Nitrate potential uptake because of plant/crop growth 
+		!Based on the three-parameter logistic growth function
         !*************  
         uptake_N =0.0_dp
         if (temp < 5.0_dp) then
@@ -1604,39 +1622,58 @@ CONTAINS
            f_temp = min(1.0_dp, (temp-5.0)/20.0)
         end if
         !!normally plant in Spring and harvest in Autumn
-        if (cropdata(jc)%plantd <= cropdata(jc)%havestd) then    
-           if (noday >= cropdata(jc)%plantd .and. noday < cropdata(jc)%havestd) then
+        if (cropdata(jc)%plantd <= cropdata(jc)%harvestd) then    
+           if (noday >= cropdata(jc)%plantd .and. noday < cropdata(jc)%harvestd) then
            uptk_help = (cropdata(jc)%up1 - cropdata(jc)%up2) * exp(-cropdata(jc)%up3*(noday - cropdata(jc)%plantd))
-           uptake_N = cropdata(jc)%up1 *cropdata(jc)%up2*cropdata(jc)%up3 * uptk_help /(1.0+uptk_help)/(1.0+ uptk_help)
+           uptake_N = cropdata(jc)%up1 *cropdata(jc)%up2*cropdata(jc)%up3 * uptk_help /(cropdata(jc)%up2+uptk_help)/ &
+                     (cropdata(jc)%up2+ uptk_help)
            end if
         end if
         !Winter crop, plant in Autumn of previous year and harvest in the current year, in other words, plant date is latter than harvest date
         !in "cropdata.txt" we still use the day number of a year
-        ! in this case, the emerging date (emergd) should be specified in cropdata.txt
-        if (cropdata(jc)%plantd > cropdata(jc)%havestd) then
-           if (noday >= cropdata(jc)%emergd .and. noday < cropdata(jc)%havestd ) then
-              uptk_help = (cropdata(jc)%up1 - cropdata(jc)%up2) * exp(-cropdata(jc)%up3*(noday - cropdata(jc)%emergd))   
-              uptake_N = cropdata(jc)%up1 *cropdata(jc)%up2*cropdata(jc)%up3 * uptk_help/(1.0+uptk_help)/(1.0+ uptk_help)           
-           elseif (noday < cropdata(jc)%emergd) then
-              uptk_help = (cropdata(jc)%up1 - cropdata(jc)%up2) * exp(-cropdata(jc)%up3*(noday + 365 - cropdata(jc)%plantd))
-              uptake_N = f_temp* cropdata(jc)%up1 *cropdata(jc)%up2*cropdata(jc)%up3 * uptk_help/(1.0+uptk_help)/(1.0+ uptk_help)
-           else
-              uptake_N = 0.0_dp  
-           end if
+        !in this case,the emergence date (emergd >0 ) can be specified, indicating the starting of growing period in spring
+		!alternatively (emergd ==0), the parameters (e.g., up2) of logistic growth function should be ajusted
+        if (cropdata(jc)%plantd > cropdata(jc)%harvestd) then
+            if (cropdata(jc)%emergd > 1) then
+               if (noday >= cropdata(jc)%emergd .and. noday < cropdata(jc)%harvestd ) then 
+                  uptk_help = (cropdata(jc)%up1 - cropdata(jc)%up2) * exp(-cropdata(jc)%up3*(noday - cropdata(jc)%emergd)) 
+                  uptake_N = cropdata(jc)%up1 *cropdata(jc)%up2*cropdata(jc)%up3 * uptk_help/ &
+                            (cropdata(jc)%up2+uptk_help)/(cropdata(jc)%up2+ uptk_help)           
+               elseif (noday < cropdata(jc)%emergd) then
+                  uptk_help = (cropdata(jc)%up1 - cropdata(jc)%up2) * exp(-cropdata(jc)%up3*(noday + 365 - cropdata(jc)%plantd))
+                  uptake_N = f_temp* cropdata(jc)%up1 *cropdata(jc)%up2*cropdata(jc)%up3 * uptk_help/&
+                             (cropdata(jc)%up2+uptk_help)/(cropdata(jc)%up2+ uptk_help)
+               else
+                  uptake_N = 0.0_dp  
+               end if
+            else
+                if (noday < cropdata(jc)%harvestd) then
+                  uptk_help = (cropdata(jc)%up1 - cropdata(jc)%up2) * exp(-cropdata(jc)%up3*(noday - cropdata(jc)%plantd + 365))   
+                  uptake_N = cropdata(jc)%up1 *cropdata(jc)%up2*cropdata(jc)%up3 * uptk_help/ &
+                             (cropdata(jc)%up2+uptk_help)/(cropdata(jc)%up2+ uptk_help)
+                else
+                  uptake_N = 0.0_dp
+                end if
+            end if
         end if
         ! if the next year cropping winter crops, means the next year's crop will be planted in current years' winter
-        if (cropdata(jc_next)%plantd > cropdata(jc_next)%havestd) then  
+        if (cropdata(jc_next)%plantd > cropdata(jc_next)%harvestd) then  
            if (noday >= cropdata(jc_next)%plantd ) then
            uptk_help = (cropdata(jc_next)%up1 - cropdata(jc_next)%up2) &
-                       * exp(-cropdata(jc_next)%up3*(noday - cropdata(jc_next)%plantd)-25) !the "25" is directly introduced from HYPE
+                       * exp(-cropdata(jc_next)%up3*(noday - cropdata(jc_next)%plantd))
            uptake_N = f_temp*cropdata(jc_next)%up1 *cropdata(jc_next)%up2*cropdata(jc_next)%up3* &
-                         uptk_help /(1.0+uptk_help)/(1.0+ uptk_help)
-           end if        
+                         uptk_help /(cropdata(jc)%up2+uptk_help)/(cropdata(jc)%up2+ uptk_help)
+           end if
         end if
-
-        potential_uptake(1) =potential_uptake(1) + frac_rotation(ir) * uptake_N * cropdata(jc)%uppsoil 
-        potential_uptake(2) =potential_uptake(2) + frac_rotation(ir) * uptake_N * (1.0 - cropdata(jc)%uppsoil) 
-    
+        !upper two layers based on root fraction
+        rf1 = fracRoots(1)/(fracRoots(1) +fracRoots(2))
+		
+        potential_uptake(1) =potential_uptake(1)+frac_rotation(idxr)*uptake_N* cropdata(jc)%uppsoil* rf1
+        potential_uptake(2) =potential_uptake(2) + frac_rotation(idxr) * uptake_N * cropdata(jc)%uppsoil*(1-rf1)
+        !yangx 2021-08 allowing N uptake occurs in all three layers, in accordance to root fractions
+        ! added layer 3		
+        potential_uptake(3) =potential_uptake(3) + frac_rotation(idxr) * uptake_N * (1-cropdata(jc)%uppsoil)!(1.0 - cropdata(jc)%uppsoil)
+		
      end if  !end of (if frac_rotation>0)
   end do     !end of rotation loop
 
@@ -1658,11 +1695,12 @@ CONTAINS
      fast_N(j) = fast_N(j) + res_nadd(j,1)
      humus_N(j)= humus_N(j) + res_nadd(j,2)
   end if
+  end do 
   !potential uptake
+  do j= 1, 3  !all three layers --yangx 2021-08
   if (potential_uptake(j) > 0.0_dp) then
      potential_uptake(j) =1000.0_dp * potential_uptake(j) / DT    !g/m^2/d --> mg/m^2/timestep 
   end if  
-
   end do 
   infrtmanapp =  sum(frtman_nadd(:,1))
  
@@ -1881,10 +1919,10 @@ CONTAINS
     real(dp), dimension(:),        intent(inout) :: ctotal_runoff
     !local
 	
-    ctotal_runoff(:) = (runoff_sealed * crunoff_sealed(:) + (fastRunoff * cfastrunoff(:) + &
+    !ctotal_runoff(:) = (runoff_sealed * crunoff_sealed(:) + (fastRunoff * cfastrunoff(:) + &
+    !                    slowRunoff * cslowrunoff(:) + baseflow * cbaseflow(:)) ) / total_runoff        
+    ctotal_runoff(:) = (frac_sealed * runoff_sealed * crunoff_sealed(:) + (1-frac_sealed)*(fastRunoff * cfastrunoff(:) + &
                         slowRunoff * cslowrunoff(:) + baseflow * cbaseflow(:)) ) / total_runoff        
-!    ctotal_runoff(:) = (frac_sealed * runoff_sealed * crunoff_sealed(:) + (1-frac_sealed)*(fastRunoff * cfastrunoff(:) + &
-!                        slowRunoff * cslowrunoff(:) + baseflow * cbaseflow(:)) ) / total_runoff        
 
   end subroutine totalrunoff_concentration    
   !-------------------------------------------------------------------
@@ -2060,15 +2098,15 @@ CONTAINS
     !----    
     !---conc. in sealed storage ***SHOULD BE IMPROVED***
     if (frac_sealed > 0.0_dp) then
-       tmp = prevstep_sealedStorage + prec_effect * frac_sealed
+       tmp = prevstep_sealedStorage + prec_effect
        if ( tmp > 0.0_dp) then
-       ctmp(:) = (csealSTW(:) * prevstep_sealedStorage + prec_effect * frac_sealed * cprec_effect(:)) / tmp
+       ctmp(:) = (csealSTW(:) * prevstep_sealedStorage + prec_effect * cprec_effect(:)) / tmp
        end if
        crunoff_sealed(:) = 1.0_dp !ctmp(:) !***SHOULD BE IMPROVED LATER***
        if (sealedStorage <= 0.1_dp) then
           csealSTW(:) = 1.0_dp
        else
-          csealSTW(:) = ctmp(:) * (sealedStorage + aet_sealed) / sealedStorage 
+          csealSTW(:) = ctmp(:) * (sealedStorage + aet_sealed) / sealedStorage !substances cannot be evaporated
        end if
     end if
 
@@ -2077,11 +2115,13 @@ CONTAINS
     cinfiltration(:,:) = 0.0_dp
     !---conc. in soil layers
     do hh =1, size(concsoil, 1)
-     
+       !considering enrichment effect due to evapotranspiration for each layer
        concsoil(hh,:) = concsoil(hh,:) * (soilMoisture(hh) + aet_soil(hh) + infiltration(hh)) / (soilMoisture(hh)+ infiltration(hh))  
-
+       !update conc for the flux that infiltrates to underlying layers
+       cinfiltration(hh,:) = concsoil(hh,:)
+       !considering the mixing of storage and the flux from the upper layer
        if (hh == 1) then
-          call mix_conc(prevstep_soilMoisture(hh), concsoil(hh,:), prec_effect*(1-frac_sealed), cprec_effect(:))
+          call mix_conc(prevstep_soilMoisture(hh), concsoil(hh,:), prec_effect, cprec_effect(:))
        else
           call mix_conc(prevstep_soilMoisture(hh), concsoil(hh,:), infiltration(hh-1), cinfiltration(hh-1,:))
        end if
@@ -2204,7 +2244,7 @@ CONTAINS
   real(dp),          intent(in)  :: sm
   real(dp),          intent(in)  :: sat
   !constant parameter  
-  real(dp), parameter         :: fsm_denilimit = 0.3_dp
+  real(dp), parameter         :: fsm_denilimit = 0.7_dp !2021-08 yangx changed based on the updated HYPE implementation
   real(dp), parameter         :: fsm_denipow   = 2.5_dp
   !local
   real(dp)  :: f_denism
@@ -2222,7 +2262,7 @@ CONTAINS
   implicit none
   real(dp),      intent(in) :: conc
   !constant parameter
-  real(dp), parameter         :: halfsatINsoil = 1.0_dp
+  real(dp), parameter         :: halfsatINsoil = 10.0_dp !-yangx 2021-07 changed from original 1 to 10!
   
   concfactor = conc / (conc + halfsatINsoil)
 

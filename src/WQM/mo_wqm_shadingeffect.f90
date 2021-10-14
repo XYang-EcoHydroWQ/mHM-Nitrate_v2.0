@@ -1,24 +1,3 @@
-! The model, entitled mHM-Nitrate model v2.0, is a fully distributed nitrate 
-! transport and removal model. Please refer to "README.md" for more instructions   	
-
-! Copyright (C) 2020,
-! Xiaoqiang Yang and Michael Rode
-! Helmholtz Centre for Environmental Research - UFZ.
-! All rights reserved.
-
-! This program is free software: you can redistribute it and/or modify
-! it under the terms of the GNU General Public License as published by
-! the Free Software Foundation, either version 3 of the License, or
-! (at your option) any later version.
-
-! This program is distributed in the hope that it will be useful,
-! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-! GNU General Public License for more details.
-
-! You should have received a copy of the GNU General Public License
-! along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 !> \file mo_wqm_shadingeffect.f90
 
 !> \brief calculate coefficient of shading effect in riparian zone.
@@ -29,7 +8,7 @@
 
 
 !> \authors Xiaoqiang Yang
-!> \date Nov 2016
+!> \date Nov 2016 
 
 MODULE mo_wqm_shadingeffect
 
@@ -146,9 +125,7 @@ CONTAINS
   do ii=1, nbasins
      gr_nor(ii,:) = (global_radi(ii,:) - minval(global_radi(ii,:)))/(maxval(global_radi(ii,:)) - minval(global_radi(ii,:))) 
   end do
-!open(223, file = "gr_data.txt")
-!write(223,*) gr_nor(1,:)
-!close(223)
+
   end subroutine read_shading_data
 !--------------------------------------------------------  
 
@@ -202,7 +179,7 @@ CONTAINS
 
   subroutine rz_shading_coeff(i, noday, nor_gr, rz_coeff_i)
 
-  use mo_wqm_global_variables,   only: norlai_daily, L11_fLAI
+  use mo_wqm_global_variables,   only: norlai_daily, L11_fLAI,LAIIDlist
   implicit none
   integer(i4),            intent(in)    :: i             !reach id 
   integer(i4),            intent(in)    :: noday
@@ -216,7 +193,7 @@ CONTAINS
   !lai_coe = sum(norlai_daily(:, noday)* L11_fLAI(i,:), )
   lai_coe = 0.0_dp
   do nn =1, size(norlai_daily, 1)
-     lai_coe = lai_coe + norlai_daily(nn,noday)* L11_fLAI(i, nn)
+     lai_coe = lai_coe + norlai_daily(nn,noday)* L11_fLAI(i, LAIIDlist(nn))
   end do
   !
 !  if (sum(L11_fLAI(i,:) ) > 1 ) then
