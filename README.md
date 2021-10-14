@@ -31,7 +31,7 @@ Yang, X., Jomaa, S., Büttner, O., & Rode, M. (2019), Autotrophic nitrate uptake
 6. Run the model with "./mhm-nitrate" (or compile again using the "make" command).
 
 ## Bug report ##
-**2020-10-14** : 
+**2021-10-14** : 
   - mo_water_quality.f90::instream_nutrient_processes (line 868): the unit transform constant in should be *1.0E-6*;
   - mo_water_quality.f90::agri_management: a new idex *idxr* is introduced to link the rotation sequeue ids to the rotation type ids from the rotation map (rotation_class.asc);
   - mo_wqm_shadingeffect.f90::rz_shading_coeff (line196): LAIIDList is used to link the LAI look-up-table ids to land use (LAI) map (LAI_class.asc).
