@@ -1,0 +1,10 @@
+number_of_crops	8																													
+crop_name	Crop_id	frtn1	frtday1	frtdown1	frtn2	frtday2	frtdown2	mann1	manday1	mandown1	mann2	manday2	mandown2	manfIN	frtperiod	resn	resday	resdown	resfast	resperiod	up1	up2	up3	uppsoil	plantd	emergd	harvestd	catch_crop	ccplantd	cchavestd
+winter_wheat_up	1	71.1	87	0.4	71.1	117	0.4	0	97	0.4	0	272	0.4	0.5	30	73	242	0.4	0.6	1	18.87	0.00002	0.07	0.95	281	0	242	0	0	0
+winter_wheat	2	79.2	87	0.4	79.2	117	0.4	0	97	0.4	0	272	0.4	0.5	30	73	242	0.4	0.6	1	20.51	0.00005	0.07	0.95	281	0	242	0	0	0
+sugarbeet	3	86.4	99	0.2	0	0	0.2	0	149	0.2	0	120	0.2	0.5	30	55.2	292	0.2	0.6	1	10.54	0.01	0.08	0.95	96	0	292	0	0	0
+rapeseed	4	86	74	0.4	86	105	0.4	0	97	0.4	0	272	0.4	0.5	30	73	211	0.4	0.6	1	16.52	0.00001	0.07	0.95	252	0	211	0	0	0
+rapeseed_up	5	81.9	74	0.4	81.9	105	0.4	0	97	0.4	0	272	0.4	0.5	30	73	211	0.4	0.6	1	15.20	0.000005	0.07	0.95	252	0	211	0	0	0
+inte_grass	6	40	100	0.2	0	0	0	30	120	0.08	8.6	220	0.1	0.5	30	59	290	0.3	0.8	1	10	0.8	0.03	0.2	120	0	350	0	0	0
+exte_grass	7	36	100	0.1	0	0	0	0	100	0.1	0	100	0.1	0.5	30	40	300	0.2	0.6	1	10	1	0.035	0.2	100	0	319	0	0	0
+forest	8	0	130	0	0	0	0	0	130	0	0	130	1	0.5	30	15	290	0.3	0.1	1	3	1	0.018	0.97	55	0	280	0	0	0
